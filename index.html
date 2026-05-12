@@ -125,6 +125,36 @@ const API_URL = "https://script.google.com/macros/s/AKfycbxQ4Ot-dGngyh9YMQqx3Ax3
 
 let userLogado = "";
 
+// função de correção
+function chamarApiJsonp(params) {
+  return new Promise((resolve, reject) => {
+    const callbackName = "jsonpCallback_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
+
+    params.callback = callbackName;
+
+    const query = new URLSearchParams(params).toString();
+    const script = document.createElement("script");
+
+    window[callbackName] = function(resposta) {
+      delete window[callbackName];
+      script.remove();
+      resolve(resposta);
+    };
+
+    script.onerror = function() {
+      delete window[callbackName];
+      script.remove();
+      reject(new Error("Erro ao conectar com o Apps Script."));
+    };
+
+    script.src = `${API_URL}?${query}`;
+    document.body.appendChild(script);
+  });
+}
+
+
+
+  
 // LOGIN
 async function login() {
   const btn = document.getElementById("btnEntrar");
@@ -135,12 +165,12 @@ async function login() {
   const p = document.getElementById("pass").value;
 
   try {
-     const resposta = await fetch(
-  `${API_URL}?action=validarLogin&user=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}`
-);
+   const res = await chamarApiJsonp({
+  action: "validarLogin",
+  user: u,
+  pass: p
+});
 
-
-    const res = await resposta.json();
 
     if (res.sucesso) {
       userLogado = res.user;
