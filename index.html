@@ -135,14 +135,10 @@ async function login() {
   const p = document.getElementById("pass").value;
 
   try {
-    const resposta = await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify({
-        action: "validarLogin",
-        user: u,
-        pass: p
-      })
-    });
+     const resposta = await fetch(
+  `${API_URL}?action=validarLogin&user=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}`
+);
+
 
     const res = await resposta.json();
 
