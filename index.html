@@ -1,17 +1,23 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
+  <meta charset="UTF-8">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;700&display=swap" rel="stylesheet">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Controle de Presença UPT</title>
+  <title>Sistema UPT Sapeaçú</title>
 
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#1a73e8">
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
-    body { font-family: 'Nunito', sans-serif; padding: 15px; background: #f0f2f5; max-width: 550px; margin: auto; }
-    .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-    #conteudo-principal { display: none; }
+    body { font-family: 'Nunito', sans-serif; padding: 15px; background: #f0f2f5; max-width: 800px; margin: auto; }
+    .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    
+    /* Controle de Telas */
+    .tela { display: none; }
+    .tela.ativa { display: block; }
 
     input, select, button {
       width: 100%;
@@ -22,189 +28,415 @@
       box-sizing: border-box;
     }
 
-    button { background: #1a73e8; color: white; border: none; font-weight: bold; cursor: pointer; }
+    button { background: #1a73e8; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    button:hover { opacity: 0.9; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
 
+    .btn-secundario { background: #6c757d; }
+    .btn-sucesso { background: #28a745; }
+    .btn-perigo { background: #dc3545; }
+
+    /* Top Bar do Login */
+    .login-header { display: flex; justify-content: flex-end; margin-bottom: 15px; }
+    .btn-submeter-topo { width: auto; background: #e67e22; padding: 8px 15px; font-size: 14px; }
+
+    /* Grid/Tabela de Fichas */
     table { width: 100%; border-collapse: collapse; margin-top: 15px; }
     th { background: #1a73e8; color: white; padding: 10px; text-align: left; }
-    td { padding: 10px; border-bottom: 1px solid #eee; font-size: 16px; }
+    td { padding: 10px; border-bottom: 1px solid #eee; font-size: 15px; }
     tr:nth-child(even) { background-color: #f8f9fa; }
+    .acoes-grid { display: flex; gap: 5px; }
+    .acoes-grid button { padding: 5px 10px; font-size: 12px; margin: 0; width: auto; }
 
-    /* STATUS */
-    select { background: #eee; font-weight: bold; }
-    select.presente { background: #d4edda; color: #155724; }
-    select.ausente { background: #f8d7da; color: #721c24; }
+    /* Form Layout */
+    .form-grupo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 600px) { .form-grupo { grid-template-columns: 1fr; } }
 
-    /* POPUPS */
+    /* Bloco de Assinatura no Form */
+    .box-assinatura { background: #f8f9fa; border: 2px dashed #ccc; border-radius: 8px; padding: 15px; text-align: center; margin-top: 10px; }
+    .codigo-token { font-size: 24px; font-weight: bold; color: #e67e22; letter-spacing: 2px; margin: 10px 0; }
+    .img-preview { max-height: 80px; margin-top: 10px; border-bottom: 1px dashed #ccc; }
+
+    /* Tela de Captura (Canvas) */
+    #canvas-assinatura { background: #fff; border: 2px solid #333; border-radius: 8px; cursor: crosshair; touch-action: none; width: 100%; height: 250px; }
+    .botoes-canvas { display: flex; gap: 10px; margin-top: 10px; }
+
+    /* Popups */
     #popup-msg {
-      display:none;
-      position:fixed;
-      top:50%; left:50%;
-      transform:translate(-50%,-50%);
-      background:#d4edda;
-      padding:20px 30px;
-      border-radius:12px;
-      box-shadow:0 4px 15px rgba(0,0,0,0.3);
-      font-weight:bold;
-      color:#155724;
-      z-index:1000;
-      text-align:center;
+      display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+      background:#d4edda; padding:20px 30px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.3);
+      font-weight:bold; color:#155724; z-index:1000; text-align:center;
     }
 
-    #popup-sair {
-      display:none;
-      position:fixed;
-      top:50%; left:50%;
-      transform:translate(-50%,-50%);
-      background:white;
-      padding:20px 30px;
-      border-radius:12px;
-      box-shadow:0 4px 15px rgba(0,0,0,0.3);
-      z-index:1000;
-      text-align:center;
+    /* Impressão / Ficha Final */
+    @media print {
+      body { background: white; color: black; padding: 0; }
+      .card, button, input, .login-header, h3, label { display: none !important; }
+      #area-impressao { display: block !important; }
     }
-
-    #popup-sair p { margin-bottom:15px; font-weight:bold; }
-
-    #popup-sair button {
-      padding:8px 15px;
-      border:none;
-      border-radius:6px;
-      font-weight:bold;
-      cursor:pointer;
-      margin: 0 5px;
-    }
-
-    #confirma-sair { background:#dc3545; color:white; }
-    #cancelar-sair { background:#6c757d; color:white; }
+    #area-impressao { display: none; background: white; padding: 40px; font-size: 14px; line-height: 1.6; }
+    .assinaturas-container { display: flex; justify-content: space-between; margin-top: 80px; }
+    .col-assinatura { width: 45%; text-align: center; border-top: 1px solid #000; padding-top: 10px; }
   </style>
 </head>
-
 <body>
 
-  <!-- LOGIN -->
-  <div id="tela-login" class="card">
-    <h3 style="text-align:center">Chamada UPT</h3>
-    <input type="text" id="user" placeholder="Usuário">
-    <input type="password" id="pass" placeholder="Senha">
-    <button id="btnEntrar" onclick="login()">Entrar</button>
-  </div>
-
-  <!-- SISTEMA -->
-  <div id="conteudo-principal" class="card">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
-      <span id="nome-prof" style="font-weight:bold"></span>
-      <button id="btnSair" style="width:auto; padding:5px 10px; background:#dc3545">Sair</button>
+  <div id="tela-login" class="tela ativa">
+    <div class="login-header">
+      <button class="btn-submeter-topo" onclick="navegarPara('tela-captura-codigo')">Submeter Assinatura</button>
     </div>
-
-    <input type="date" id="data-input">
-    <button id="btnCarregar" onclick="carregar()">Carregar Lista</button>
-
-    <table id="tabela">
-      <thead>
-        <tr><th>Estudante</th><th>Status</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-
-    <button id="btnSalvar" onclick="salvar()" style="background:#28a745; margin-top:15px; display:none">
-      Salvar Alterações
-    </button>
+    <div class="card" style="max-width: 450px; margin: auto;">
+      <h3 style="text-align:center; margin-top: 0;">Fichas de Cadastro UPT</h3>
+      <input type="text" id="user" placeholder="Usuário">
+      <input type="password" id="pass" placeholder="Senha">
+      <button id="btnEntrar" onclick="login()">Entrar no Sistema</button>
+    </div>
   </div>
 
-  <!-- POPUPS -->
+  <div id="tela-adm" class="tela">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
+        <span id="nome-prof" style="font-weight:bold; color:#1a73e8;"></span>
+        <button onclick="logout()" style="width:auto; padding:5px 15px;" class="btn-perigo">Sair</button>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-bottom:15px;">
+        <button onclick="abrirNovaFicha()" class="btn-sucesso" style="width: auto;">+ Criar Nova Ficha</button>
+        <button onclick="carregarFichasGrid()" class="btn-secundario" style="width: auto;">Atualizar Lista</button>
+      </div>
+
+      <h3>Fichas Cadastradas</h3>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>CPF</th>
+              <th>Assinatura</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="grid-fichas-corpo">
+            </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="tela-formulario" class="tela">
+    <div class="card">
+      <h3 id="titulo-form">Nova Ficha de Cadastro</h3>
+      <input type="hidden" id="form-id">
+      
+      <div class="form-grupo">
+        <div>
+          <label>Nome Completo:</label>
+          <input type="text" id="form-nome" placeholder="Nome do Aluno">
+        </div>
+        <div>
+          <label>CPF:</label>
+          <input type="text" id="form-cpf" placeholder="000.000.000-00">
+        </div>
+      </div>
+
+      <div class="form-grupo">
+        <div>
+          <label>E-mail:</label>
+          <input type="email" id="form-email" placeholder="exemplo@email.com">
+        </div>
+        <div>
+          <label>Telefone:</label>
+          <input type="text" id="form-telefone" placeholder="(75) 99999-9999">
+        </div>
+      </div>
+
+      <label>Data de Nascimento:</label>
+      <input type="date" id="form-data-nasc">
+
+      <div class="box-assinatura">
+        <h4 style="margin:0 0 10px 0;">Coleta de Assinatura Digital</h4>
+        <div id="preview-assinatura-container" style="display:none;">
+          <p style="color: green; font-weight: bold; margin: 5px 0;">✓ Assinatura carregada</p>
+          <img id="form-img-preview" class="img-preview" src="" alt="Assinatura"><br>
+        </div>
+        
+        <div id="bloco-gerar-codigo">
+          <p style="font-size:13px; color:#666; margin: 5px 0;">Clique para gerar o código que o aluno usará no celular.</p>
+          <button type="button" id="btn-acao-assinatura" onclick="gerarCodigoTemporario()">Capturar Assinatura</button>
+        </div>
+
+        <div id="bloco-codigo-ativo" style="display:none;">
+          <p style="margin:5px 0; font-size:14px;">Peça para o aluno acessar o site e digitar o código abaixo:</p>
+          <div id="display-codigo" class="codigo-token">------</div>
+          <p style="font-size:12px; color:#e67e22; margin:0;">Código válido por 10 minutos. Aguardando preenchimento...</p>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:20px;">
+        <button onclick="salvarFichaCompleta()" class="btn-sucesso">Salvar Ficha</button>
+        <button id="btn-visualizar-doc" onclick="visualizarDocumento()" class="btn-secundario" style="display:none;">Visualizar Documento</button>
+        <button onclick="navegarPara('tela-adm')" class="btn-perigo">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="tela-captura-codigo" class="tela">
+    <div class="card" style="max-width:400px; margin:auto; text-align:center;">
+      <h3>Validar Código de Assinatura</h3>
+      <p style="color:#555;">Insira o código gerado no computador do coordenador.</p>
+      <input type="text" id="aluno-codigo-input" placeholder="Ex: UPT-1234" style="text-align:center; font-size:20px; text-transform: uppercase;">
+      <button onclick="validarCodigoAluno()" class="btn-sucesso" style="margin-top:10px;">Entrar na Tela de Escrita</button>
+      <button onclick="navegarPara('tela-login')" class="btn-secundario">Voltar ao Início</button>
+    </div>
+  </div>
+
+  <div id="tela-canvas-aluno" class="tela">
+    <div class="card" style="max-width: 650px; margin: auto;">
+      <h3 style="margin-top:0; text-align:center;">Assine na Tela com o Dedo ou Caneta</h3>
+      <p style="font-size: 13px; color:#555; text-align:center;">Vire o celular de lado (horizontal) se preferir mais espaço.</p>
+      
+      <canvas id="canvas-assinatura"></canvas>
+      
+      <div class="botoes-canvas">
+        <button onclick="limparCanvas()" class="btn-secundario">Limpar</button>
+        <button id="btn-salvar-canvas" onclick="enviarAssinaturaSupabase()" class="btn-sucesso">Confirmar e Enviar Assinatura</button>
+      </div>
+    </div>
+  </div>
+
   <div id="popup-msg"></div>
 
-  <div id="popup-sair">
-    <p>Você realmente deseja sair do sistema?</p>
-    <button id="confirma-sair">Sim</button>
-    <button id="cancelar-sair">Cancelar</button>
+  <div id="area-impressao">
+    <h2 style="text-align: center; margin-bottom: 30px;">FICHA DE CADASTRO E MATRÍCULA - UPT SAPEAÇU</h2>
+    <hr>
+    <div style="margin-top: 20px;">
+      <p><strong>Nome Completo:</strong> <span id="print-nome"></span></p>
+      <p><strong>CPF:</strong> <span id="print-cpf"></span></p>
+      <p><strong>E-mail:</strong> <span id="print-email"></span></p>
+      <p><strong>Telefone:</strong> <span id="print-telefone"></span></p>
+      <p><strong>Data de Nascimento:</strong> <span id="print-data"></span></p>
+    </div>
+    <div style="margin-top: 40px;">
+      <p>Declaro serem verdadeiras todas as informações prestadas neste formulário eletrônico.</p>
+    </div>
+    <div class="assinaturas-container">
+      <div class="col-assinatura">
+        <img id="print-img-aluno" src="" alt="Assinatura Aluno" style="max-height: 70px; display:block; margin: 0 auto 5px auto;"><br>
+        Assinatura do Estudante / Responsável
+      </div>
+      <div class="col-assinatura">
+        <div style="height: 70px;"></div>
+        Assinatura do Diretor Geral - UPT
+      </div>
+    </div>
   </div>
 
-<script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxQ4Ot-dGngyh9YMQqx3Ax3Ms25TTrU1WVWFzT9NkHwhK_AcoUtyQLwNohrufApEin7/exec";
+  <script>
+    // CONFIGURAÇÕES SUPABASE - Troque pelas suas credenciais reais do projeto
+    const SUPABASE_URL = "https://SEU-PROJETO.supabase.co";
+    const SUPABASE_ANON_KEY = "SUA-CHAVE-ANONIMA-AQUI";
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    let userLogado = "";
+    let fichaAtualId = null;
+    let tokenPollingInterval = null;
+    let alunoRegistroId = null;
 
-let userLogado = "";
-
-// função de correção
-function chamarApiJsonp(params) {
-  return new Promise((resolve, reject) => {
-    const callbackName = "jsonpCallback_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
-
-    params.callback = callbackName;
-
-    const query = new URLSearchParams(params).toString();
-    const script = document.createElement("script");
-
-    window[callbackName] = function(resposta) {
-      delete window[callbackName];
-      script.remove();
-      resolve(resposta);
-    };
-
-    script.onerror = function() {
-      delete window[callbackName];
-      script.remove();
-      reject(new Error("Erro ao conectar com o Apps Script."));
-    };
-
-    script.src = `${API_URL}?${query}`;
-    document.body.appendChild(script);
-  });
-}
-
-
-
-  
-// LOGIN
-async function login() {
-  const btn = document.getElementById("btnEntrar");
-  btn.disabled = true;
-  btn.innerText = "Entrando...";
-
-  const u = document.getElementById("user").value;
-  const p = document.getElementById("pass").value;
-
-  try {
-   const res = await chamarApiJsonp({
-  action: "validarLogin",
-  user: u,
-  pass: p
-});
-
-
-    if (res.sucesso) {
-      userLogado = res.user;
-      document.getElementById("tela-login").style.display = "none";
-      document.getElementById("conteudo-principal").style.display = "block";
-      document.getElementById("nome-prof").innerText = "Olá, " + res.nome;
-    } else {
-      alert("Login incorreto!");
-      btn.disabled = false;
-      btn.innerText = "Entrar";
+    // Controle de Navegação de Telas
+    function navegarPara(idTela) {
+      document.querySelectorAll('.tela').forEach(t => t.classList.remove('ativa'));
+      document.getElementById(idTela).classList.add('ativa');
+      clearInterval(tokenPollingInterval);
+      
+      if(idTela === 'tela-canvas-aluno') {
+        setTimeout(configurarCanvas, 150);
+        solicitarModoPaisagem();
+      }
     }
-  } catch (erro) {
-    alert("Erro ao conectar com o servidor.");
-    console.error(erro);
-    btn.disabled = false;
-    btn.innerText = "Entrar";
-  }
-}
 
-// CARREGAR
-async function carregar() {
-  const data = document.getElementById("data-input").value;
-  if (!data) return alert("Selecione a data!");
+    // LOGIN DE ADMINISTRADOR VIA SUPABASE
+    async function login() {
+      const btn = document.getElementById("btnEntrar");
+      btn.disabled = true; btn.innerText = "Entrando...";
+      const u = document.getElementById("user").value;
+      const p = document.getElementById("pass").value;
 
-  const btn = document.getElementById("btnCarregar");
-  btn.innerText = "Buscando...";
-  btn.disabled = true;
+      try {
+        const { data, error } = await supabase
+          .from('usuarios_adm')
+          .select('nome')
+          .eq('usuario', u)
+          .eq('senha', p)
+          .single();
 
-  try {
-    const resposta = await fetch(`${API_URL}?action=getAlunosComPresenca&data=${encodeURIComponent(data)}`);
-    const res = await resposta.json();
+        if (error || !data) {
+          alert("Usuário ou senha incorretos!");
+          btn.disabled = false; btn.innerText = "Entrar no Sistema";
+          return;
+        }
 
-    const alunos = res.alunos;
-    const salvos = res.salvos;
+        userLogado = u;
+        document.getElementById("nome-prof").innerText = "Olá, " + data.nome;
+        navegarPara('tela-adm');
+        carregarFichasGrid();
+      } catch (erro) {
+        alert("Erro ao conectar com o Supabase.");
+        btn.disabled = false; btn.innerText = "Entrar no Sistema";
+      }
+    }
 
-    const tbody = document.querySelector("#tabela tbody");
-   
+    function logout() {
+      userLogado = "";
+      document.getElementById("user").value = "";
+      document.getElementById("pass").value = "";
+      navegarPara('tela-login');
+    }
+
+    // CARREGAR LISTA/GRID DE FICHAS DIRETO DO SUPABASE
+    async function carregarFichasGrid() {
+      const { data, error } = await supabase.from('cadastros').select('*').order('created_at', { ascending: false });
+      if (error) return console.error(error);
+
+      const tbody = document.getElementById("grid-fichas-corpo");
+      tbody.innerHTML = "";
+
+      data.forEach(item => {
+        const tr = document.createElement("tr");
+        const statusAssina = item.url_assinatura 
+          ? `<span style="color:green;font-weight:bold;">✓ Assinado</span>` 
+          : `<span style="color:#e67e22;">Pendente</span>`;
+
+        tr.innerHTML = `
+          <td>${item.nome}</td>
+          <td>${item.cpf}</td>
+          <td>${statusAssina}</td>
+          <td class="acoes-grid">
+            <button onclick="editarFicha('${item.id}')" style="background:#1a73e8;">Editar Ficha</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // ABRIR FORMULÁRIO PARA NOVO CADASTRO
+    function abrirNovaFicha() {
+      fichaAtualId = null;
+      document.getElementById("titulo-form").innerText = "Nova Ficha de Cadastro";
+      document.getElementById("form-id").value = "";
+      document.getElementById("form-nome").value = "";
+      document.getElementById("form-cpf").value = "";
+      document.getElementById("form-email").value = "";
+      document.getElementById("form-telefone").value = "";
+      document.getElementById("form-data-nasc").value = "";
+      
+      document.getElementById("preview-assinatura-container").style.display = "none";
+      document.getElementById("btn-visualizar-doc").style.display = "none";
+      document.getElementById("bloco-gerar-codigo").style.display = "block";
+      document.getElementById("bloco-codigo-ativo").style.display = "none";
+      document.getElementById("btn-acao-assinatura").innerText = "Capturar Assinatura";
+
+      navegarPara('tela-formulario');
+    }
+
+    // ABRIR FORMULÁRIO PARA EDITAR EXISTENTE
+    async function editarFicha(id) {
+      fichaAtualId = id;
+      document.getElementById("titulo-form").innerText = "Editar Ficha de Cadastro";
+      
+      const { data, error } = await supabase.from('cadastros').select('*').eq('id', id).single();
+      if(error) return alert("Erro ao buscar dados da ficha.");
+
+      document.getElementById("form-id").value = data.id;
+      document.getElementById("form-nome").value = data.nome;
+      document.getElementById("form-cpf").value = data.cpf;
+      document.getElementById("form-email").value = data.email || "";
+      document.getElementById("form-telefone").value = data.telefone || "";
+      document.getElementById("form-data-nasc").value = data.data_nascimento || "";
+
+      document.getElementById("bloco-codigo-ativo").style.display = "none";
+      document.getElementById("bloco-gerar-codigo").style.display = "block";
+
+      if(data.url_assinatura) {
+        document.getElementById("form-img-preview").src = data.url_assinatura;
+        document.getElementById("preview-assinatura-container").style.display = "block";
+        document.getElementById("btn-acao-assinatura").innerText = "Recapturar Assinatura";
+        document.getElementById("btn-visualizar-doc").style.display = "inline-block";
+      } else {
+        document.getElementById("preview-assinatura-container").style.display = "none";
+        document.getElementById("btn-acao-assinatura").innerText = "Capturar Assinatura";
+        document.getElementById("btn-visualizar-doc").style.display = "none";
+      }
+
+      navegarPara('tela-formulario');
+    }
+
+    // GERAR CÓDIGO TEMPORÁRIO (VALIDO POR 10 MINUTOS OU ATÉ SALVAR)
+    async function gerarCodigoTemporario() {
+      const nome = document.getElementById("form-nome").value;
+      const cpf = document.getElementById("form-cpf").value;
+      if(!nome || !cpf) return alert("Por favor, preencha o Nome e o CPF antes de colher a assinatura.");
+
+      const tokenAleatorio = "UPT-" + Math.floor(1000 + Math.random() * 9000);
+      
+      if(!fichaAtualId) {
+        const { data, error } = await supabase.from('cadastros').insert([{
+          nome: nome, cpf: cpf,
+          email: document.getElementById("form-email").value,
+          telefone: document.getElementById("form-telefone").value,
+          data_nascimento: document.getElementById("form-data-nasc").value || null,
+          codigo_temporario: tokenAleatorio,
+          status_assinatura: 'pendente'
+        }]).select().single();
+        
+        if(error) return alert("Erro ao iniciar captura: " + error.message);
+        fichaAtualId = data.id;
+      } else {
+        const { error } = await supabase.from('cadastros').update({
+          codigo_temporario: tokenAleatorio,
+          status_assinatura: 'pendente'
+        }).eq('id', fichaAtualId);
+        
+        if(error) return alert("Erro ao atualizar token: " + error.message);
+      }
+
+      document.getElementById("display-codigo").innerText = tokenAleatorio;
+      document.getElementById("bloco-gerar-codigo").style.display = "none";
+      document.getElementById("bloco-codigo-ativo").style.display = "block";
+
+      // Realtime Polling para verificar atualização da assinatura
+      tokenPollingInterval = setInterval(async () => {
+        const { data } = await supabase.from('cadastros').select('url_assinatura, status_assinatura').eq('id', fichaAtualId).single();
+        if(data && data.url_assinatura && data.status_assinatura === 'assinado') {
+          clearInterval(tokenPollingInterval);
+          document.getElementById("form-img-preview").src = data.url_assinatura;
+          document.getElementById("preview-assinatura-container").style.display = "block";
+          document.getElementById("bloco-codigo-ativo").style.display = "none";
+          document.getElementById("bloco-gerar-codigo").style.display = "block";
+          document.getElementById("btn-acao-assinatura").innerText = "Recapturar Assinatura";
+          document.getElementById("btn-visualizar-doc").style.display = "inline-block";
+          mostrarPopupSucesso();
+        }
+      }, 3000);
+
+      // Expiração automática de 10 minutos
+      setTimeout(async () => {
+        clearInterval(tokenPollingInterval);
+        if(document.getElementById("bloco-codigo-ativo").style.display === "block") {
+          await supabase.from('cadastros').update({ codigo_temporario: null }).eq('id', fichaAtualId);
+          document.getElementById("bloco-codigo-ativo").style.display = "none";
+          document.getElementById("bloco-gerar-codigo").style.display = "block";
+          alert("O código expirou. Gere outro se necessário.");
+        }
+      }, 600000);
+    }
+
+    function mostrarPopupSucesso() {
+      const pop = document.getElementById("popup-msg");
+      pop.innerText = "Assinatura capturada com sucesso!";
+      pop.style.display = "block";
+      setTimeout(() => pop.style.display = "none", 3000);
+    }
+
+    // SALVAR DADOS DO FORMULÁRIO COMPLETO
+    async function salvarFichaCompleta() {
+      const nome = document.getElementById("form-
