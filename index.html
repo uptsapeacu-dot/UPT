@@ -109,6 +109,9 @@
         <span id="btnEntrar-texto">Entrar no Sistema</span>
         <span id="btnEntrar-spinner" class="spinner" style="display: none;"></span>
       </button>
+      <a href="#" onclick="forcarAtualizacaoManual(event)" style="display:block; text-align:center; font-size:12px; margin-top:15px; color:#6c757d; text-decoration:none; transition: 0.2s;" onmouseover="this.style.color='#1a73e8'" onmouseout="this.style.color='#6c757d'">
+        🔄 Forçar Atualização (Baixar Novos Códigos)
+      </a>
     </form>
   </div>
 
@@ -256,15 +259,78 @@
     const SUPABASE_ANON_KEY = "sb_publishable_v-dIqaW0onidjVjQ71pFMA_bCgQzRwu";
     const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Desativar e desregistrar qualquer service worker ativo no navegador
+    // Controle de versão para forçar atualização e limpar cache do navegador
+    const APP_VERSION = "1.0.1"; // Altere esta versão para forçar atualização dos códigos em todos os clientes
+    
+    async function verificarVersaoEAtualizar() {
+      const versaoSalva = localStorage.getItem("app_version");
+      if (versaoSalva !== APP_VERSION) {
+        console.log("Nova versão detectada. Limpando caches e recarregando...");
+        localStorage.setItem("app_version", APP_VERSION);
+        
+        // Limpa o Cache Storage
+        if ('caches' in window) {
+          try {
+            const cacheNames = await caches.keys();
+            await Promise.all(cacheNames.map(name => caches.delete(name)));
+          } catch (e) {
+            console.error("Erro ao limpar cache storage:", e);
+          }
+        }
+        
+        // Desregistra Service Workers
+        if ('serviceWorker' in navigator) {
+          try {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (const registration of registrations) {
+              await registration.unregister();
+            }
+          } catch (e) {
+            console.error("Erro ao desregistrar service worker:", e);
+          }
+        }
+        
+        // Força recarregamento completo
+        window.location.reload(true);
+      }
+    }
+    verificarVersaoEAtualizar();
+
+    // Desregistrar de forma síncrona/imediata em visitas subsequentes (caso algum service-worker tente se instalar)
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(registrations => {
         for (const registration of registrations) {
           registration.unregister();
         }
-      }).catch(err => {
-        console.error("Erro ao desregistrar o service worker:", err);
-      });
+      }).catch(err => console.error("Erro ao desregistrar o service worker:", err));
+    }
+
+    async function forcarAtualizacaoManual(event) {
+      if (event) event.preventDefault();
+      if (confirm("Deseja forçar a limpeza de cache e baixar a versão mais recente dos códigos?")) {
+        localStorage.removeItem("app_version");
+        if ('caches' in window) {
+          try {
+            const keys = await caches.keys();
+            for (const key of keys) {
+              await caches.delete(key);
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        }
+        if ('serviceWorker' in navigator) {
+          try {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (const registration of registrations) {
+              await registration.unregister();
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        }
+        window.location.reload(true);
+      }
     }
     
     let userLogado = "";
