@@ -10,18 +10,8 @@
   <meta name="theme-color" content="#ea580c">
 
   <!-- Supabase, Lucide (UMD) & Alpine.js CDNs -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script>
-    if (!window.supabase) {
-      document.write('<scr'+'ipt src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"><\/scr'+'ipt>');
-    }
-  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
-  <script>
-    if (!window.lucide) {
-      document.write('<scr'+'ipt src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"><\/scr'+'ipt>');
-    }
-  </script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
 
   <style>
@@ -623,17 +613,14 @@
 
   <script>
     // CONFIGURAÇÕES SUPABASE
+    // O bundle UMD do supabase-js expõe como variável global 'supabase' (não window.supabase)
     const SUPABASE_URL = "https://seqmmtlesowtcpegzsjf.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_v-dIqaW0onidjVjQ71pFMA_bCgQzRwu";
     
-    let supabase = null;
-    try {
-      if (window.supabase) {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      }
-    } catch (e) {
-      console.error("Erro ao inicializar Supabase:", e);
-    }
+    // 'supabase' aqui é a variável global exposta pelo CDN UMD (var supabase = ...)
+    const sbClient = (typeof supabase !== 'undefined' && supabase.createClient)
+      ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      : null;
 
     // Controle de versão para forçar atualização e limpar cache do navegador
     const APP_VERSION = "1.0.4"; 
@@ -688,7 +675,7 @@
     document.addEventListener('alpine:init', () => {
       Alpine.data('app', () => ({
         screen: 'login',
-        supabaseError: !window.supabase || !supabase,
+        supabaseError: !sbClient,
 
         // Auth
         email: '',
@@ -789,7 +776,7 @@
         },
 
         async verificarSessao() {
-          const { data: { session }, error } = await supabase.auth.getSession();
+          const { data: { session }, error } = await sbClient.auth.getSession();
           if (session && session.user) {
             this.usuarioLogado = session.user;
             this.nomeProfessor = session.user.user_metadata?.nome || session.user.email.split('@')[0];
@@ -801,7 +788,7 @@
         async login() {
           this.loadingAuth = true;
           try {
-            const { data, error } = await supabase.auth.signInWithPassword({
+            const { data, error } = await sbClient.auth.signInWithPassword({
               email: this.email,
               password: this.senha
             });
@@ -821,7 +808,7 @@
         },
 
         async logout() {
-          await supabase.auth.signOut();
+          await sbClient.auth.signOut();
           this.usuarioLogado = null;
           this.nomeProfessor = '';
           this.email = '';
@@ -832,7 +819,7 @@
         async carregarFichasGrid() {
           this.loadingFichas = true;
           try {
-            const { data, error } = await supabase.from('cadastros').select('*').order('created_at', { ascending: false });
+            const { data, error } = await sbClient.from('cadastros').select('*').order('created_at', { ascending: false });
             if (error) throw error;
             this.fichas = data;
           } catch (erro) {
@@ -860,7 +847,7 @@
         async editarFicha(id) {
           this.fichaId = id;
           try {
-            const { data, error } = await supabase.from('cadastros').select('*').eq('id', id).single();
+            const { data, error } = await sbClient.from('cadastros').select('*').eq('id', id).single();
             if (error) throw error;
 
             this.form = {
@@ -888,7 +875,7 @@
           const tokenAleatorio = "UPT-" + Math.floor(1000 + Math.random() * 9000);
 
           if (!this.fichaId) {
-            const { data, error } = await supabase.from('cadastros').insert([{
+            const { data, error } = await sbClient.from('cadastros').insert([{
               nome: this.form.nome,
               cpf: this.form.cpf,
               email: this.form.email,
@@ -904,7 +891,7 @@
             }
             this.fichaId = data.id;
           } else {
-            const { error } = await supabase.from('cadastros').update({
+            const { error } = await sbClient.from('cadastros').update({
               codigo_temporario: tokenAleatorio,
               status_assinatura: 'pendente'
             }).eq('id', this.fichaId);
@@ -920,7 +907,7 @@
 
           // Polling
           this.pollingInterval = setInterval(async () => {
-            const { data } = await supabase.from('cadastros').select('url_assinatura, status_assinatura').eq('id', this.fichaId).single();
+            const { data } = await sbClient.from('cadastros').select('url_assinatura, status_assinatura').eq('id', this.fichaId).single();
             if (data && data.url_assinatura && data.status_assinatura === 'assinado') {
               clearInterval(this.pollingInterval);
               this.form.urlAssinatura = data.url_assinatura;
@@ -934,7 +921,7 @@
           setTimeout(async () => {
             clearInterval(this.pollingInterval);
             if (this.blocoCodigoAtivo) {
-              await supabase.from('cadastros').update({ codigo_temporario: null }).eq('id', this.fichaId);
+              await sbClient.from('cadastros').update({ codigo_temporario: null }).eq('id', this.fichaId);
               this.blocoCodigoAtivo = false;
               this.codigoTemporario = '';
               this.mostrarPopup("O código expirou. Gere outro se necessário.", "alerta");
@@ -950,7 +937,7 @@
 
           try {
             if (this.fichaId) {
-              const { error } = await supabase.from('cadastros').update({
+              const { error } = await sbClient.from('cadastros').update({
                 nome: this.form.nome,
                 cpf: this.form.cpf,
                 email: this.form.email,
@@ -961,7 +948,7 @@
 
               if (error) throw error;
             } else {
-              const { error } = await supabase.from('cadastros').insert([{
+              const { error } = await sbClient.from('cadastros').insert([{
                 nome: this.form.nome,
                 cpf: this.form.cpf,
                 email: this.form.email,
