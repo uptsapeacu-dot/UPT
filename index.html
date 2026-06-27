@@ -340,6 +340,53 @@
     #area-impressao { display: none; background: white; padding: 40px; font-size: 14px; line-height: 1.6; }
     .assinaturas-container { display: flex; justify-content: space-between; margin-top: 80px; }
     .col-assinatura { width: 45%; text-align: center; border-top: 1px solid #000; padding-top: 10px; }
+
+    /* Otimização da tela de assinatura no celular (Ocupa 90%+ da tela) */
+    @media (max-width: 900px) {
+      .tela-assinatura-full {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        background: var(--bg) !important;
+        z-index: 1000 !important;
+        box-sizing: border-box !important;
+      }
+      .tela-assinatura-full .card {
+        margin: 0 !important;
+        border-radius: 0 !important;
+        border: none !important;
+        height: 100vh !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        box-sizing: border-box !important;
+      }
+    }
+
+    @media (max-width: 900px) and (orientation: portrait) {
+      .tela-assinatura-full .card {
+        padding: 15px !important;
+      }
+      .tela-assinatura-full #canvas-assinatura {
+        height: 380px !important; /* Aumenta bastante a área de escrita na vertical */
+      }
+    }
+
+    @media (max-width: 900px) and (orientation: landscape) {
+      .tela-assinatura-full .card {
+        padding: 10px !important;
+      }
+      /* Ocultar cabeçalhos para liberar espaço na horizontal */
+      .tela-assinatura-full h3, 
+      .tela-assinatura-full p {
+        display: none !important;
+      }
+      .tela-assinatura-full #canvas-assinatura {
+        height: calc(100vh - 85px) !important; /* Ocupa quase a altura total livre */
+      }
+    }
   </style>
 </head>
 <body x-data="app">
@@ -559,7 +606,7 @@
     </div>
 
     <!-- Tela do Canvas de Assinatura (Aluno) -->
-    <div class="tela" :class="{ 'ativa': screen === 'canvas-aluno' }">
+    <div class="tela tela-assinatura-full" :class="{ 'ativa': screen === 'canvas-aluno' }">
       <div class="card" style="max-width: 650px; margin: auto;">
         <div style="text-align: center; margin-bottom: 15px;">
           <h3 style="margin-top:0; font-size: 20px; font-weight: 700; margin-bottom: 5px;">Assine na Tela</h3>
