@@ -77,6 +77,22 @@
     #area-impressao { display: none; background: white; padding: 40px; font-size: 14px; line-height: 1.6; }
     .assinaturas-container { display: flex; justify-content: space-between; margin-top: 80px; }
     .col-assinatura { width: 45%; text-align: center; border-top: 1px solid #000; padding-top: 10px; }
+
+    /* CSS para o Spinner de Loading */
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -85,12 +101,15 @@
     <div class="login-header">
       <button class="btn-submeter-topo" onclick="navegarPara('tela-captura-codigo')">Submeter Assinatura</button>
     </div>
-    <div class="card" style="max-width: 450px; margin: auto;">
+    <form class="card" style="max-width: 450px; margin: auto;" onsubmit="event.preventDefault(); login();">
       <h3 style="text-align:center; margin-top: 0;">Fichas de Cadastro UPT</h3>
-      <input type="text" id="user" placeholder="Usuário">
-      <input type="password" id="pass" placeholder="Senha">
-      <button id="btnEntrar" onclick="login()">Entrar no Sistema</button>
-    </div>
+      <input type="text" id="user" placeholder="Usuário" required>
+      <input type="password" id="pass" placeholder="Senha" required>
+      <button type="submit" id="btnEntrar" style="display: flex; justify-content: center; align-items: center; gap: 8px;">
+        <span id="btnEntrar-texto">Entrar no Sistema</span>
+        <span id="btnEntrar-spinner" class="spinner" style="display: none;"></span>
+      </button>
+    </form>
   </div>
 
   <div id="tela-adm" class="tela">
@@ -268,7 +287,13 @@
     // LOGIN DE ADMINISTRADOR VIA SUPABASE
     async function login() {
       const btn = document.getElementById("btnEntrar");
-      btn.disabled = true; btn.innerText = "Entrando...";
+      const btnText = document.getElementById("btnEntrar-texto");
+      const btnSpinner = document.getElementById("btnEntrar-spinner");
+      
+      btn.disabled = true;
+      btnText.innerText = "Entrando...";
+      btnSpinner.style.display = "inline-block";
+      
       const u = document.getElementById("user").value;
       const p = document.getElementById("pass").value;
 
@@ -282,7 +307,9 @@
 
         if (error || !data) {
           alert("Usuário ou senha incorretos!");
-          btn.disabled = false; btn.innerText = "Entrar no Sistema";
+          btn.disabled = false;
+          btnText.innerText = "Entrar no Sistema";
+          btnSpinner.style.display = "none";
           return;
         }
 
@@ -292,7 +319,9 @@
         carregarFichasGrid();
       } catch (erro) {
         alert("Erro ao conectar com o Supabase.");
-        btn.disabled = false; btn.innerText = "Entrar no Sistema";
+        btn.disabled = false;
+        btnText.innerText = "Entrar no Sistema";
+        btnSpinner.style.display = "none";
       }
     }
 
@@ -300,6 +329,15 @@
       userLogado = "";
       document.getElementById("user").value = "";
       document.getElementById("pass").value = "";
+      
+      // Reset details of login button on logout
+      const btn = document.getElementById("btnEntrar");
+      const btnText = document.getElementById("btnEntrar-texto");
+      const btnSpinner = document.getElementById("btnEntrar-spinner");
+      if (btn) btn.disabled = false;
+      if (btnText) btnText.innerText = "Entrar no Sistema";
+      if (btnSpinner) btnSpinner.style.display = "none";
+
       navegarPara('tela-login');
     }
 
