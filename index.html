@@ -769,9 +769,9 @@
           this.blocoCodigoAtivo = false;
 
           if (idTela === 'canvas-aluno') {
-            this.$nextTick(() => {
+            setTimeout(() => {
               this.configurarCanvas();
-            });
+            }, 100);
           }
         },
 
@@ -1001,13 +1001,18 @@
           this.canvasElement = canvas;
           this.canvasContext = ctx;
 
+          // Ajuste de alta resolução para telas Retina/High-DPI
           const rect = canvas.getBoundingClientRect();
-          canvas.width = rect.width;
-          canvas.height = rect.height;
+          const dpr = window.devicePixelRatio || 1;
+          canvas.width = rect.width * dpr;
+          canvas.height = rect.height * dpr;
 
+          // Escalar o contexto de desenho para combinar com o CSS pixels
+          ctx.scale(dpr, dpr);
           ctx.strokeStyle = "#000000";
-          ctx.lineWidth = 3;
+          ctx.lineWidth = 1.8; // Linha mais fina e realista para assinaturas
           ctx.lineCap = "round";
+          ctx.lineJoin = "round"; // Deixa as curvas mais suaves
 
           canvas.addEventListener('mousedown', (e) => {
             this.desenhando = true;
@@ -1064,7 +1069,12 @@
 
         limparCanvas() {
           if (this.canvasElement && this.canvasContext) {
-            this.canvasContext.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
+            const canvas = this.canvasElement;
+            const ctx = this.canvasContext;
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0); // Reseta a escala temporariamente
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpa o buffer físico completo
+            ctx.restore(); // Restaura a escala para o próximo desenho
           }
         },
 
