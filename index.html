@@ -711,6 +711,7 @@
         canvasElement: null,
         canvasContext: null,
         desenhando: false,
+        canvasResizeObserver: null,
 
         // Toast Popup
         toast: {
@@ -1001,18 +1002,31 @@
           this.canvasElement = canvas;
           this.canvasContext = ctx;
 
-          // Ajuste de alta resolução para telas Retina/High-DPI
-          const rect = canvas.getBoundingClientRect();
-          const dpr = window.devicePixelRatio || 1;
-          canvas.width = rect.width * dpr;
-          canvas.height = rect.height * dpr;
+          // Se já houver um observer ativo, desconectamos antes
+          if (this.canvasResizeObserver) {
+            this.canvasResizeObserver.disconnect();
+          }
 
-          // Escalar o contexto de desenho para combinar com o CSS pixels
-          ctx.scale(dpr, dpr);
-          ctx.strokeStyle = "#000000";
-          ctx.lineWidth = 1.8; // Linha mais fina e realista para assinaturas
-          ctx.lineCap = "round";
-          ctx.lineJoin = "round"; // Deixa as curvas mais suaves
+          // Monitora o tamanho do elemento para calibrar a resolução no DPI correto
+          const resizeObserver = new ResizeObserver(entries => {
+            for (let entry of entries) {
+              const width = entry.contentRect.width || canvas.clientWidth;
+              const height = entry.contentRect.height || canvas.clientHeight;
+              const dpr = window.devicePixelRatio || 1;
+
+              canvas.width = width * dpr;
+              canvas.height = height * dpr;
+
+              ctx.scale(dpr, dpr);
+              ctx.strokeStyle = "#000000";
+              ctx.lineWidth = 1.4; // Reduzido em 20% para maior precisão de escrita
+              ctx.lineCap = "round";
+              ctx.lineJoin = "round";
+            }
+          });
+
+          resizeObserver.observe(canvas);
+          this.canvasResizeObserver = resizeObserver;
 
           canvas.addEventListener('mousedown', (e) => {
             this.desenhando = true;
@@ -1052,18 +1066,20 @@
 
         obterPosicaoMouse(e) {
           const rect = this.canvasElement.getBoundingClientRect();
+          const border = 2; // Desconta a borda CSS de 2px
           return {
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top
+            x: e.clientX - rect.left - border,
+            y: e.clientY - rect.top - border
           };
         },
 
         obterPosicaoTouch(e) {
           const rect = this.canvasElement.getBoundingClientRect();
           const touch = e.touches[0];
+          const border = 2; // Desconta a borda CSS de 2px
           return {
-            x: touch.clientX - rect.left,
-            y: touch.clientY - rect.top
+            x: touch.clientX - rect.left - border,
+            y: touch.clientY - rect.top - border
           };
         },
 
