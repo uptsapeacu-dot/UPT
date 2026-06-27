@@ -334,7 +334,7 @@
     /* Impressão / Ficha Final */
     @media print {
       body { background: white; color: black; padding: 0; }
-      .card, button, input, .login-header, h3, label { display: none !important; }
+      #app-container, #popup-msg, #loading-inicial { display: none !important; }
       #area-impressao { display: block !important; }
     }
     #area-impressao { display: none; background: white; padding: 40px; font-size: 14px; line-height: 1.6; }
@@ -352,7 +352,7 @@
   </div>
 
   <!-- Conteúdo do Aplicativo (oculto por x-cloak, exibido quando Alpine carrega) -->
-  <div x-cloak>
+  <div id="app-container" x-cloak>
     
     <!-- Tela de Login -->
     <div class="tela" :class="{ 'ativa': screen === 'login' }">
