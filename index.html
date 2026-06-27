@@ -236,6 +236,17 @@
     const SUPABASE_URL = "https://seqmmtlesowtcpegzsjf.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_v-dIqaW0onidjVjQ71pFMA_bCgQzRwu";
     const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Desativar e desregistrar qualquer service worker ativo no navegador
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        for (const registration of registrations) {
+          registration.unregister();
+        }
+      }).catch(err => {
+        console.error("Erro ao desregistrar o service worker:", err);
+      });
+    }
     
     let userLogado = "";
     let fichaAtualId = null;
@@ -439,4 +450,219 @@
 
     // SALVAR DADOS DO FORMULÁRIO COMPLETO
     async function salvarFichaCompleta() {
-      const nome = document.getElementById("form-
+      const nome = document.getElementById("form-nome").value;
+      const cpf = document.getElementById("form-cpf").value;
+      const email = document.getElementById("form-email").value;
+      const telefone = document.getElementById("form-telefone").value;
+      const dataNasc = document.getElementById("form-data-nasc").value;
+
+      if (!nome || !cpf) {
+        return alert("Por favor, preencha o Nome e o CPF.");
+      }
+
+      try {
+        if (fichaAtualId) {
+          const { error } = await supabase.from('cadastros').update({
+            nome,
+            cpf,
+            email,
+            telefone,
+            data_nascimento: dataNasc || null,
+            codigo_temporario: null
+          }).eq('id', fichaAtualId);
+
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from('cadastros').insert([{
+            nome,
+            cpf,
+            email,
+            telefone,
+            data_nascimento: dataNasc || null,
+            status_assinatura: 'pendente'
+          }]);
+
+          if (error) throw error;
+        }
+
+        alert("Ficha salva com sucesso!");
+        navegarPara('tela-adm');
+        carregarFichasGrid();
+      } catch (error) {
+        alert("Erro ao salvar a ficha: " + error.message);
+      }
+    }
+
+    // VALIDAR CÓDIGO INSERIDO PELO ALUNO
+    async function validarCodigoAluno() {
+      const codigoInput = document.getElementById("aluno-codigo-input");
+      const codigo = codigoInput.value.trim().toUpperCase();
+
+      if (!codigo) {
+        return alert("Por favor, insira o código.");
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('cadastros')
+          .select('id, nome')
+          .eq('codigo_temporario', codigo)
+          .single();
+
+        if (error || !data) {
+          alert("Código inválido ou expirado.");
+          return;
+        }
+
+        alunoRegistroId = data.id;
+        navegarPara('tela-canvas-aluno');
+      } catch (erro) {
+        alert("Erro ao validar código.");
+        console.error(erro);
+      }
+    }
+
+    // CONFIGURAÇÃO DO CANVAS DE ASSINATURA
+    let canvas, ctx;
+    let desenhando = false;
+
+    function configurarCanvas() {
+      canvas = document.getElementById('canvas-assinatura');
+      if (!canvas) return;
+      ctx = canvas.getContext('2d');
+
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = 3;
+      ctx.lineCap = "round";
+
+      canvas.addEventListener('mousedown', iniciarDesenho);
+      canvas.addEventListener('mousemove', desenhar);
+      canvas.addEventListener('mouseup', pararDesenho);
+      canvas.addEventListener('mouseout', pararDesenho);
+
+      canvas.addEventListener('touchstart', iniciarDesenhoTouch);
+      canvas.addEventListener('touchmove', desenharTouch);
+      canvas.addEventListener('touchend', pararDesenho);
+    }
+
+    function obterPosicaoMouse(e) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      };
+    }
+
+    function obterPosicaoTouch(e) {
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      return {
+        x: touch.clientX - rect.left,
+        y: touch.clientY - rect.top
+      };
+    }
+
+    function iniciarDesenho(e) {
+      desenhando = true;
+      const pos = obterPosicaoMouse(e);
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+    }
+
+    function iniciarDesenhoTouch(e) {
+      e.preventDefault();
+      desenhando = true;
+      const pos = obterPosicaoTouch(e);
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+    }
+
+    function desenhar(e) {
+      if (!desenhando) return;
+      const pos = obterPosicaoMouse(e);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+    }
+
+    function desenharTouch(e) {
+      e.preventDefault();
+      if (!desenhando) return;
+      const pos = obterPosicaoTouch(e);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+    }
+
+    function pararDesenho() {
+      desenhando = false;
+    }
+
+    function limparCanvas() {
+      if (canvas && ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    // ENVIAR ASSINATURA PARA O SUPABASE (BASE64)
+    async function enviarAssinaturaSupabase() {
+      if (!alunoRegistroId) {
+        return alert("Erro: Registro do aluno não identificado.");
+      }
+
+      const dataURL = canvas.toDataURL('image/png');
+
+      const btn = document.getElementById("btn-salvar-canvas");
+      btn.disabled = true;
+      btn.innerText = "Enviando...";
+
+      try {
+        const { error } = await supabase
+          .from('cadastros')
+          .update({
+            url_assinatura: dataURL,
+            status_assinatura: 'assinado',
+            codigo_temporario: null
+          })
+          .eq('id', alunoRegistroId);
+
+        if (error) throw error;
+
+        alert("Assinatura enviada com sucesso!");
+        navegarPara('tela-login');
+      } catch (erro) {
+        alert("Erro ao enviar assinatura: " + erro.message);
+        btn.disabled = false;
+        btn.innerText = "Confirmar e Enviar Assinatura";
+      }
+    }
+
+    // FORÇAR MODO PAISAGEM (OPCIONAL/DECORATIVO)
+    function solicitarModoPaisagem() {
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(() => {
+          // Ignora se o navegador não der suporte ou permissão
+        });
+      }
+    }
+
+    // DOCUMENT PREVIEW & PRINT
+    function visualizarDocumento() {
+      document.getElementById("print-nome").innerText = document.getElementById("form-nome").value;
+      document.getElementById("print-cpf").innerText = document.getElementById("form-cpf").value;
+      document.getElementById("print-email").innerText = document.getElementById("form-email").value;
+      document.getElementById("print-telefone").innerText = document.getElementById("form-telefone").value;
+      document.getElementById("print-data").innerText = document.getElementById("form-data-nasc").value;
+
+      const previewImg = document.getElementById("form-img-preview");
+      if (previewImg && previewImg.src) {
+        document.getElementById("print-img-aluno").src = previewImg.src;
+      }
+
+      window.print();
+    }
+  </script>
+</body>
+</html>
