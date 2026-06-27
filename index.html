@@ -61,12 +61,29 @@
     #canvas-assinatura { background: #fff; border: 2px solid #333; border-radius: 8px; cursor: crosshair; touch-action: none; width: 100%; height: 250px; }
     .botoes-canvas { display: flex; gap: 10px; margin-top: 10px; }
 
-    /* Popups */
+    /* Popups / Toasts */
     #popup-msg {
-      display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
-      background:#d4edda; padding:20px 30px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.3);
-      font-weight:bold; color:#155724; z-index:1000; text-align:center;
+      visibility: hidden;
+      opacity: 0;
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translate(-50%, -20px);
+      padding: 15px 25px;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      font-weight: bold;
+      z-index: 1000;
+      min-width: 280px;
+      max-width: 90%;
+      text-align: center;
+      box-sizing: border-box;
+      transition: transform 0.3s ease, opacity 0.3s ease, visibility 0.3s ease;
     }
+    #popup-msg.sucesso { background: #d4edda; color: #155724; border-left: 5px solid #28a745; }
+    #popup-msg.erro { background: #f8d7da; color: #721c24; border-left: 5px solid #dc3545; }
+    #popup-msg.alerta { background: #fff3cd; color: #856404; border-left: 5px solid #ffc107; }
+    #popup-msg.mostrar { visibility: visible; opacity: 1; transform: translate(-50%, 0); }
 
     /* Impressão / Ficha Final */
     @media print {
@@ -333,6 +350,24 @@
       }
     }
     
+    let popupTimeout = null;
+    function mostrarPopup(msg, tipo = 'sucesso') {
+      const pop = document.getElementById("popup-msg");
+      if (!pop) return;
+      
+      pop.className = "";
+      pop.classList.add(tipo, "mostrar");
+      pop.innerText = msg;
+      
+      if (popupTimeout) {
+        clearTimeout(popupTimeout);
+      }
+      
+      popupTimeout = setTimeout(() => {
+        pop.classList.remove("mostrar");
+      }, 4000);
+    }
+
     let userLogado = "";
     let fichaAtualId = null;
     let tokenPollingInterval = null;
@@ -372,7 +407,7 @@
           .single();
 
         if (error || !data) {
-          alert("Usuário ou senha incorretos!");
+          mostrarPopup("Usuário ou senha incorretos!", "erro");
           btn.disabled = false;
           btnText.innerText = "Entrar no Sistema";
           btnSpinner.style.display = "none";
@@ -384,7 +419,7 @@
         navegarPara('tela-adm');
         carregarFichasGrid();
       } catch (erro) {
-        alert("Erro ao conectar com o Supabase.");
+        mostrarPopup("Erro ao conectar com o Supabase.", "erro");
         btn.disabled = false;
         btnText.innerText = "Entrar no Sistema";
         btnSpinner.style.display = "none";
@@ -459,7 +494,7 @@
       document.getElementById("titulo-form").innerText = "Editar Ficha de Cadastro";
       
       const { data, error } = await supabase.from('cadastros').select('*').eq('id', id).single();
-      if(error) return alert("Erro ao buscar dados da ficha.");
+      if(error) { mostrarPopup("Erro ao buscar dados da ficha.", "erro"); return; }
 
       document.getElementById("form-id").value = data.id;
       document.getElementById("form-nome").value = data.nome;
@@ -489,7 +524,7 @@
     async function gerarCodigoTemporario() {
       const nome = document.getElementById("form-nome").value;
       const cpf = document.getElementById("form-cpf").value;
-      if(!nome || !cpf) return alert("Por favor, preencha o Nome e o CPF antes de colher a assinatura.");
+      if(!nome || !cpf) { mostrarPopup("Por favor, preencha o Nome e o CPF antes de colher a assinatura.", "alerta"); return; }
 
       const tokenAleatorio = "UPT-" + Math.floor(1000 + Math.random() * 9000);
       
@@ -503,7 +538,7 @@
           status_assinatura: 'pendente'
         }]).select().single();
         
-        if(error) return alert("Erro ao iniciar captura: " + error.message);
+        if(error) { mostrarPopup("Erro ao iniciar captura: " + error.message, "erro"); return; }
         fichaAtualId = data.id;
       } else {
         const { error } = await supabase.from('cadastros').update({
@@ -511,7 +546,7 @@
           status_assinatura: 'pendente'
         }).eq('id', fichaAtualId);
         
-        if(error) return alert("Erro ao atualizar token: " + error.message);
+        if(error) { mostrarPopup("Erro ao atualizar token: " + error.message, "erro"); return; }
       }
 
       document.getElementById("display-codigo").innerText = tokenAleatorio;
@@ -540,16 +575,13 @@
           await supabase.from('cadastros').update({ codigo_temporario: null }).eq('id', fichaAtualId);
           document.getElementById("bloco-codigo-ativo").style.display = "none";
           document.getElementById("bloco-gerar-codigo").style.display = "block";
-          alert("O código expirou. Gere outro se necessário.");
+          mostrarPopup("O código expirou. Gere outro se necessário.", "alerta");
         }
       }, 600000);
     }
 
     function mostrarPopupSucesso() {
-      const pop = document.getElementById("popup-msg");
-      pop.innerText = "Assinatura capturada com sucesso!";
-      pop.style.display = "block";
-      setTimeout(() => pop.style.display = "none", 3000);
+      mostrarPopup("Assinatura capturada com sucesso!", "sucesso");
     }
 
     // SALVAR DADOS DO FORMULÁRIO COMPLETO
@@ -561,7 +593,8 @@
       const dataNasc = document.getElementById("form-data-nasc").value;
 
       if (!nome || !cpf) {
-        return alert("Por favor, preencha o Nome e o CPF.");
+        mostrarPopup("Por favor, preencha o Nome e o CPF.", "alerta");
+        return;
       }
 
       try {
@@ -589,11 +622,11 @@
           if (error) throw error;
         }
 
-        alert("Ficha salva com sucesso!");
+        mostrarPopup("Ficha salva com sucesso!", "sucesso");
         navegarPara('tela-adm');
         carregarFichasGrid();
       } catch (error) {
-        alert("Erro ao salvar a ficha: " + error.message);
+        mostrarPopup("Erro ao salvar a ficha: " + error.message, "erro");
       }
     }
 
@@ -603,7 +636,8 @@
       const codigo = codigoInput.value.trim().toUpperCase();
 
       if (!codigo) {
-        return alert("Por favor, insira o código.");
+        mostrarPopup("Por favor, insira o código.", "alerta");
+        return;
       }
 
       try {
@@ -614,14 +648,14 @@
           .single();
 
         if (error || !data) {
-          alert("Código inválido ou expirado.");
+          mostrarPopup("Código inválido ou expirado.", "erro");
           return;
         }
 
         alunoRegistroId = data.id;
         navegarPara('tela-canvas-aluno');
       } catch (erro) {
-        alert("Erro ao validar código.");
+        mostrarPopup("Erro ao validar código.", "erro");
         console.error(erro);
       }
     }
@@ -713,7 +747,8 @@
     // ENVIAR ASSINATURA PARA O SUPABASE (BASE64)
     async function enviarAssinaturaSupabase() {
       if (!alunoRegistroId) {
-        return alert("Erro: Registro do aluno não identificado.");
+        mostrarPopup("Erro: Registro do aluno não identificado.", "erro");
+        return;
       }
 
       const dataURL = canvas.toDataURL('image/png');
@@ -734,10 +769,10 @@
 
         if (error) throw error;
 
-        alert("Assinatura enviada com sucesso!");
+        mostrarPopup("Assinatura enviada com sucesso!", "sucesso");
         navegarPara('tela-login');
       } catch (erro) {
-        alert("Erro ao enviar assinatura: " + erro.message);
+        mostrarPopup("Erro ao enviar assinatura: " + erro.message, "erro");
         btn.disabled = false;
         btn.innerText = "Confirmar e Enviar Assinatura";
       }
