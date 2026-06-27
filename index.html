@@ -2,64 +2,264 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sistema UPT Sapeaçú</title>
 
   <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#1a73e8">
+  <meta name="theme-color" content="#ea580c">
 
+  <!-- Supabase, Lucide & Alpine.js CDNs -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
   <style>
-    body { font-family: 'Nunito', sans-serif; padding: 15px; background: #f0f2f5; max-width: 800px; margin: auto; }
-    .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
-    
+    :root {
+      --primary: #ea580c; /* Laranja Primário */
+      --primary-hover: #c2410c; /* Laranja Escuro */
+      --primary-light: #fff7ed; /* Fundo Laranja Claro */
+      --bg: #f8fafc; /* Fundo Geral */
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: rgba(0, 0, 0, 0.08);
+      --border-focus: #f97316;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      padding: 15px;
+      background: var(--bg);
+      color: var(--text);
+      max-width: 800px;
+      margin: auto;
+    }
+
+    .card {
+      background: var(--card-bg);
+      padding: 25px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+      border: 1px solid var(--border);
+      margin-bottom: 20px;
+      animation: fadeIn 0.3s ease-out;
+    }
+
     /* Controle de Telas */
     .tela { display: none; }
     .tela.ativa { display: block; }
 
-    input, select, button {
-      width: 100%;
-      padding: 12px;
-      margin: 6px 0;
-      border-radius: 8px;
-      border: 1px solid #ddd;
-      box-sizing: border-box;
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    button { background: #1a73e8; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
-    button:hover { opacity: 0.9; }
-    button:disabled { background: #ccc; cursor: not-allowed; }
+    input, select, button {
+      width: 100%;
+      padding: 12px 16px;
+      margin: 8px 0;
+      border-radius: 10px;
+      border: 1px solid rgba(0,0,0,0.12);
+      box-sizing: border-box;
+      font-family: inherit;
+      font-size: 15px;
+      transition: all 0.2s ease;
+    }
 
-    .btn-secundario { background: #6c757d; }
-    .btn-sucesso { background: #28a745; }
-    .btn-perigo { background: #dc3545; }
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
+    }
+
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    button:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      background: #e2e8f0;
+      color: #94a3b8;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secundario {
+      background: white;
+      color: var(--text);
+      border: 1px solid rgba(0,0,0,0.15);
+    }
+    .btn-secundario:hover {
+      background: #f8fafc;
+      border-color: rgba(0,0,0,0.25);
+    }
+
+    .btn-perigo {
+      background: #ef4444;
+    }
+    .btn-perigo:hover {
+      background: #dc2626;
+    }
+
+    .btn-sucesso {
+      background: #10b981;
+    }
+    .btn-sucesso:hover {
+      background: #059669;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 12px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .badge-sucesso {
+      background: #ecfdf5;
+      color: #065f46;
+    }
+    .badge-pendente {
+      background: #fff7ed;
+      color: #9a3412;
+    }
 
     /* Top Bar do Login */
-    .login-header { display: flex; justify-content: flex-end; margin-bottom: 15px; }
-    .btn-submeter-topo { width: auto; background: #e67e22; padding: 8px 15px; font-size: 14px; }
+    .login-header {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 20px;
+    }
+    .btn-submeter-topo {
+      width: auto;
+      background: var(--primary-light);
+      color: var(--primary);
+      border: 1px solid rgba(234, 88, 12, 0.2);
+      padding: 8px 18px;
+      font-size: 14px;
+      border-radius: 8px;
+    }
+    .btn-submeter-topo:hover {
+      background: var(--primary);
+      color: white;
+    }
 
     /* Grid/Tabela de Fichas */
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th { background: #1a73e8; color: white; padding: 10px; text-align: left; }
-    td { padding: 10px; border-bottom: 1px solid #eee; font-size: 15px; }
-    tr:nth-child(even) { background-color: #f8f9fa; }
-    .acoes-grid { display: flex; gap: 5px; }
-    .acoes-grid button { padding: 5px 10px; font-size: 12px; margin: 0; width: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    th {
+      background: var(--primary-light);
+      color: var(--primary-hover);
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    tr:hover {
+      background-color: #fafafa;
+    }
+    .acoes-grid {
+      display: flex;
+      gap: 8px;
+    }
+    .acoes-grid button {
+      padding: 6px 12px;
+      font-size: 13px;
+      margin: 0;
+      width: auto;
+    }
 
     /* Form Layout */
-    .form-grupo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    @media (max-width: 600px) { .form-grupo { grid-template-columns: 1fr; } }
+    .form-grupo {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 600px) {
+      .form-grupo { grid-template-columns: 1fr; }
+    }
+    label {
+      font-weight: 500;
+      font-size: 14px;
+      margin-bottom: 4px;
+      display: inline-block;
+      color: var(--text-muted);
+    }
 
     /* Bloco de Assinatura no Form */
-    .box-assinatura { background: #f8f9fa; border: 2px dashed #ccc; border-radius: 8px; padding: 15px; text-align: center; margin-top: 10px; }
-    .codigo-token { font-size: 24px; font-weight: bold; color: #e67e22; letter-spacing: 2px; margin: 10px 0; }
-    .img-preview { max-height: 80px; margin-top: 10px; border-bottom: 1px dashed #ccc; }
+    .box-assinatura {
+      background: var(--primary-light);
+      border: 2px dashed rgba(234, 88, 12, 0.3);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      margin-top: 15px;
+    }
+    .codigo-token {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: 3px;
+      margin: 15px 0;
+      font-feature-settings: "tnum";
+    }
+    .img-preview {
+      max-height: 90px;
+      margin-top: 10px;
+      border-bottom: 1px dashed rgba(0,0,0,0.1);
+      padding-bottom: 10px;
+    }
 
     /* Tela de Captura (Canvas) */
-    #canvas-assinatura { background: #fff; border: 2px solid #333; border-radius: 8px; cursor: crosshair; touch-action: none; width: 100%; height: 250px; }
-    .botoes-canvas { display: flex; gap: 10px; margin-top: 10px; }
+    #canvas-assinatura {
+      background: #fff;
+      border: 2px solid var(--text);
+      border-radius: 12px;
+      cursor: crosshair;
+      touch-action: none;
+      width: 100%;
+      height: 280px;
+    }
+    .botoes-canvas {
+      display: flex;
+      gap: 12px;
+      margin-top: 15px;
+    }
 
     /* Popups / Toasts */
     #popup-msg {
@@ -71,7 +271,7 @@
       transform: translate(-50%, -20px);
       padding: 15px 25px;
       border-radius: 8px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.12);
       font-weight: bold;
       z-index: 1000;
       min-width: 280px;
@@ -80,10 +280,42 @@
       box-sizing: border-box;
       transition: transform 0.3s ease, opacity 0.3s ease, visibility 0.3s ease;
     }
-    #popup-msg.sucesso { background: #d4edda; color: #155724; border-left: 5px solid #28a745; }
-    #popup-msg.erro { background: #f8d7da; color: #721c24; border-left: 5px solid #dc3545; }
-    #popup-msg.alerta { background: #fff3cd; color: #856404; border-left: 5px solid #ffc107; }
+    #popup-msg.sucesso { background: #ecfdf5; color: #065f46; border-left: 5px solid #10b981; }
+    #popup-msg.erro { background: #fef2f2; color: #991b1b; border-left: 5px solid #ef4444; }
+    #popup-msg.alerta { background: #fff7ed; color: #9a3412; border-left: 5px solid #f97316; }
     #popup-msg.mostrar { visibility: visible; opacity: 1; transform: translate(-50%, 0); }
+
+    /* Loading Spinner */
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Input Icon Container */
+    .input-icon-container {
+      position: relative;
+    }
+    .input-icon-container input {
+      padding-left: 42px;
+    }
+    .input-icon-container i, .input-icon-container svg {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      width: 18px;
+      height: 18px;
+      pointer-events: none;
+    }
 
     /* Impressão / Ficha Final */
     @media print {
@@ -94,57 +326,72 @@
     #area-impressao { display: none; background: white; padding: 40px; font-size: 14px; line-height: 1.6; }
     .assinaturas-container { display: flex; justify-content: space-between; margin-top: 80px; }
     .col-assinatura { width: 45%; text-align: center; border-top: 1px solid #000; padding-top: 10px; }
-
-    /* CSS para o Spinner de Loading */
-    .spinner {
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      border-top-color: #fff;
-      animation: spin 0.8s linear infinite;
-      vertical-align: middle;
-    }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
   </style>
 </head>
-<body>
+<body x-data="app">
 
-  <div id="tela-login" class="tela ativa">
+  <!-- Tela de Login -->
+  <div class="tela" :class="{ 'ativa': screen === 'login' }">
     <div class="login-header">
-      <button class="btn-submeter-topo" onclick="navegarPara('tela-captura-codigo')">Submeter Assinatura</button>
-    </div>
-    <form class="card" style="max-width: 450px; margin: auto;" onsubmit="event.preventDefault(); login();">
-      <h3 style="text-align:center; margin-top: 0;">Fichas de Cadastro UPT</h3>
-      <input type="text" id="user" placeholder="Usuário" required>
-      <input type="password" id="pass" placeholder="Senha" required>
-      <button type="submit" id="btnEntrar" style="display: flex; justify-content: center; align-items: center; gap: 8px;">
-        <span id="btnEntrar-texto">Entrar no Sistema</span>
-        <span id="btnEntrar-spinner" class="spinner" style="display: none;"></span>
+      <button class="btn-submeter-topo" @click="navegarPara('captura-codigo')">
+        <i data-lucide="signature"></i> Submeter Assinatura
       </button>
-      <a href="#" onclick="forcarAtualizacaoManual(event)" style="display:block; text-align:center; font-size:12px; margin-top:15px; color:#6c757d; text-decoration:none; transition: 0.2s;" onmouseover="this.style.color='#1a73e8'" onmouseout="this.style.color='#6c757d'">
-        🔄 Forçar Atualização (Baixar Novos Códigos)
+    </div>
+    <form class="card" style="max-width: 450px; margin: auto;" @submit.prevent="login()">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <div style="background: var(--primary-light); width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
+          <i data-lucide="lock" style="width: 32px; height: 32px; color: var(--primary);"></i>
+        </div>
+        <h3 style="margin: 0; font-size: 22px; font-weight: 700;">Fichas de Cadastro UPT</h3>
+        <p style="font-size: 14px; color: var(--text-muted); margin: 5px 0 0 0;">Faça login na sua conta de coordenador</p>
+      </div>
+
+      <div class="input-icon-container">
+        <i data-lucide="mail"></i>
+        <input type="email" x-model="email" placeholder="E-mail" required>
+      </div>
+
+      <div class="input-icon-container" style="margin-top: 10px;">
+        <i data-lucide="key-round"></i>
+        <input type="password" x-model="senha" placeholder="Senha" required>
+      </div>
+
+      <button type="submit" :disabled="loadingAuth" style="margin-top: 15px; width: 100%;">
+        <span x-show="!loadingAuth">Entrar no Sistema</span>
+        <span x-show="loadingAuth" class="spinner"></span>
+      </button>
+
+      <a href="#" @click.prevent="forcarAtualizacaoManual()" style="display:block; text-align:center; font-size:12px; margin-top:20px; color: var(--text-muted); text-decoration:none; transition: 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">
+        🔄 Forçar Atualização (Limpar Cache)
       </a>
     </form>
   </div>
 
-  <div id="tela-adm" class="tela">
+  <!-- Tela Administrativa (Painel do Professor) -->
+  <div class="tela" :class="{ 'ativa': screen === 'adm' }">
     <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
-        <span id="nome-prof" style="font-weight:bold; color:#1a73e8;"></span>
-        <button onclick="logout()" style="width:auto; padding:5px 15px;" class="btn-perigo">Sair</button>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="background: var(--primary-light); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="user" style="width: 18px; height: 18px; color: var(--primary);"></i>
+          </div>
+          <span style="font-weight:600; font-size: 16px;" x-text="'Olá, ' + nomeProfessor"></span>
+        </div>
+        <button @click="logout()" style="width:auto; padding:6px 16px;" class="btn-perigo">
+          <i data-lucide="log-out" style="width:16px; height:16px;"></i> Sair
+        </button>
       </div>
 
-      <div style="display:flex; gap:10px; margin-bottom:15px;">
-        <button onclick="abrirNovaFicha()" class="btn-sucesso" style="width: auto;">+ Criar Nova Ficha</button>
-        <button onclick="carregarFichasGrid()" class="btn-secundario" style="width: auto;">Atualizar Lista</button>
+      <div style="display:flex; gap:12px; margin-bottom:20px;">
+        <button @click="abrirNovaFicha()" class="btn-sucesso" style="width: auto;">
+          <i data-lucide="plus"></i> Criar Nova Ficha
+        </button>
+        <button @click="carregarFichasGrid()" class="btn-secundario" style="width: auto;" :disabled="loadingFichas">
+          <i data-lucide="refresh-cw" :class="{ 'spinner': loadingFichas }" style="width:16px; height:16px;"></i> Atualizar Lista
+        </button>
       </div>
 
-      <h3>Fichas Cadastradas</h3>
+      <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 15px;">Fichas Cadastradas</h3>
       <div style="overflow-x: auto;">
         <table>
           <thead>
@@ -155,112 +402,180 @@
               <th>Ações</th>
             </tr>
           </thead>
-          <tbody id="grid-fichas-corpo">
-            </tbody>
+          <tbody>
+            <template x-for="item in fichas" :key="item.id">
+              <tr>
+                <td x-text="item.nome" style="font-weight:600;"></td>
+                <td x-text="item.cpf" style="color: var(--text-muted);"></td>
+                <td>
+                  <template x-if="item.url_assinatura">
+                    <span class="badge badge-sucesso">
+                      <i data-lucide="check" style="width: 14px; height: 14px;"></i> Assinado
+                    </span>
+                  </template>
+                  <template x-if="!item.url_assinatura">
+                    <span class="badge badge-pendente">
+                      <i data-lucide="clock" style="width: 14px; height: 14px;"></i> Pendente
+                    </span>
+                  </template>
+                </td>
+                <td class="acoes-grid">
+                  <button @click="editarFicha(item.id)" class="btn-secundario">
+                    <i data-lucide="edit-3" style="width: 14px; height: 14px;"></i> Editar
+                  </button>
+                </td>
+              </tr>
+            </template>
+            <template x-if="fichas.length === 0 && !loadingFichas">
+              <tr>
+                <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                  Nenhuma ficha cadastrada ainda.
+                </td>
+              </tr>
+            </template>
+          </tbody>
         </table>
       </div>
     </div>
   </div>
 
-  <div id="tela-formulario" class="tela">
+  <!-- Tela de Formulário (Cadastro / Edição) -->
+  <div class="tela" :class="{ 'ativa': screen === 'formulario' }">
     <div class="card">
-      <h3 id="titulo-form">Nova Ficha de Cadastro</h3>
-      <input type="hidden" id="form-id">
+      <h3 style="font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 20px;" x-text="fichaId ? 'Editar Ficha de Cadastro' : 'Nova Ficha de Cadastro'"></h3>
       
       <div class="form-grupo">
         <div>
           <label>Nome Completo:</label>
-          <input type="text" id="form-nome" placeholder="Nome do Aluno">
+          <input type="text" x-model="form.nome" placeholder="Nome do Aluno">
         </div>
         <div>
           <label>CPF:</label>
-          <input type="text" id="form-cpf" placeholder="000.000.000-00">
+          <input type="text" x-model="form.cpf" placeholder="000.000.000-00">
         </div>
       </div>
 
-      <div class="form-grupo">
+      <div class="form-grupo" style="margin-top: 10px;">
         <div>
           <label>E-mail:</label>
-          <input type="email" id="form-email" placeholder="exemplo@email.com">
+          <input type="email" x-model="form.email" placeholder="exemplo@email.com">
         </div>
         <div>
           <label>Telefone:</label>
-          <input type="text" id="form-telefone" placeholder="(75) 99999-9999">
+          <input type="text" x-model="form.telefone" placeholder="(75) 99999-9999">
         </div>
       </div>
 
-      <label>Data de Nascimento:</label>
-      <input type="date" id="form-data-nasc">
+      <div style="margin-top: 10px;">
+        <label>Data de Nascimento:</label>
+        <input type="date" x-model="form.dataNascimento">
+      </div>
 
+      <!-- Coleta de Assinatura -->
       <div class="box-assinatura">
-        <h4 style="margin:0 0 10px 0;">Coleta de Assinatura Digital</h4>
-        <div id="preview-assinatura-container" style="display:none;">
-          <p style="color: green; font-weight: bold; margin: 5px 0;">✓ Assinatura carregada</p>
-          <img id="form-img-preview" class="img-preview" src="" alt="Assinatura"><br>
+        <h4 style="margin: 0 0 10px 0; font-size: 16px; font-weight: 700; color: var(--primary-hover);">Coleta de Assinatura Digital</h4>
+        
+        <div x-show="form.urlAssinatura">
+          <p style="color: #065f46; font-weight: 600; margin: 5px 0; display: inline-flex; align-items: center; gap: 4px;">
+            <i data-lucide="check-circle-2" style="width:16px;height:16px;"></i> Assinatura carregada
+          </p>
+          <div style="background: white; border-radius: 8px; padding: 10px; max-width: 300px; margin: 10px auto; border: 1px solid rgba(0,0,0,0.06);">
+            <img :src="form.urlAssinatura" class="img-preview" alt="Assinatura">
+          </div>
         </div>
         
-        <div id="bloco-gerar-codigo">
-          <p style="font-size:13px; color:#666; margin: 5px 0;">Clique para gerar o código que o aluno usará no celular.</p>
-          <button type="button" id="btn-acao-assinatura" onclick="gerarCodigoTemporario()">Capturar Assinatura</button>
+        <div x-show="!blocoCodigoAtivo">
+          <p style="font-size:13px; color: var(--text-muted); margin: 5px 0 10px 0;">Clique para gerar o código que o aluno usará no celular.</p>
+          <button type="button" @click="gerarCodigoTemporario()" style="width: auto;">
+            <i data-lucide="smartphone"></i> <span x-text="form.urlAssinatura ? 'Recapturar Assinatura' : 'Capturar Assinatura'"></span>
+          </button>
         </div>
 
-        <div id="bloco-codigo-ativo" style="display:none;">
-          <p style="margin:5px 0; font-size:14px;">Peça para o aluno acessar o site e digitar o código abaixo:</p>
-          <div id="display-codigo" class="codigo-token">------</div>
-          <p style="font-size:12px; color:#e67e22; margin:0;">Código válido por 10 minutos. Aguardando preenchimento...</p>
+        <div x-show="blocoCodigoAtivo">
+          <p style="margin: 5px 0; font-size: 14px; font-weight: 500;">Peça para o aluno acessar o site e digitar o código abaixo:</p>
+          <div class="codigo-token" x-text="codigoTemporario">UPT-XXXX</div>
+          <p style="font-size: 12px; color: var(--primary); margin: 0; font-weight: 500;">
+            <i data-lucide="loader-2" class="spinner" style="width: 12px; height: 12px; vertical-align: middle;"></i> Aguardando preenchimento no celular... (Código válido por 10 minutos)
+          </p>
         </div>
       </div>
 
-      <div style="display:flex; gap:10px; margin-top:20px;">
-        <button onclick="salvarFichaCompleta()" class="btn-sucesso">Salvar Ficha</button>
-        <button id="btn-visualizar-doc" onclick="visualizarDocumento()" class="btn-secundario" style="display:none;">Visualizar Documento</button>
-        <button onclick="navegarPara('tela-adm')" class="btn-perigo">Cancelar</button>
+      <div style="display:flex; gap:12px; margin-top:25px;">
+        <button @click="salvarFichaCompleta()" class="btn-sucesso">
+          <i data-lucide="save"></i> Salvar Ficha
+        </button>
+        <button x-show="form.urlAssinatura" @click="visualizarDocumento()" class="btn-secundario" style="width: auto;">
+          <i data-lucide="printer"></i> Imprimir Documento
+        </button>
+        <button @click="navegarPara('adm')" class="btn-perigo" style="width: auto;">
+          Cancelar
+        </button>
       </div>
     </div>
   </div>
 
-  <div id="tela-captura-codigo" class="tela">
+  <!-- Tela de Validação do Código (Aluno) -->
+  <div class="tela" :class="{ 'ativa': screen === 'captura-codigo' }">
     <div class="card" style="max-width:400px; margin:auto; text-align:center;">
-      <h3>Validar Código de Assinatura</h3>
-      <p style="color:#555;">Insira o código gerado no computador do coordenador.</p>
-      <input type="text" id="aluno-codigo-input" placeholder="Ex: UPT-1234" style="text-align:center; font-size:20px; text-transform: uppercase;">
-      <button onclick="validarCodigoAluno()" class="btn-sucesso" style="margin-top:10px;">Entrar na Tela de Escrita</button>
-      <button onclick="navegarPara('tela-login')" class="btn-secundario">Voltar ao Início</button>
+      <div style="background: var(--primary-light); width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
+        <i data-lucide="shield-check" style="width: 28px; height: 28px; color: var(--primary);"></i>
+      </div>
+      <h3 style="font-size: 20px; font-weight: 700; margin-top:0;">Validar Código de Assinatura</h3>
+      <p style="color: var(--text-muted); font-size:14px; margin-bottom: 20px;">Insira o código gerado no computador do coordenador.</p>
+      
+      <input type="text" x-model="alunoCodigo" placeholder="Ex: UPT-1234" style="text-align:center; font-size:22px; text-transform: uppercase; font-weight: 700; letter-spacing: 2px;">
+      
+      <button @click="validarCodigoAluno()" class="btn-sucesso" style="margin-top:15px; width: 100%;">
+        Entrar na Tela de Escrita
+      </button>
+      <button @click="navegarPara('login')" class="btn-secundario" style="margin-top: 8px; width: 100%;">
+        Voltar ao Início
+      </button>
     </div>
   </div>
 
-  <div id="tela-canvas-aluno" class="tela">
+  <!-- Tela do Canvas de Assinatura (Aluno) -->
+  <div class="tela" :class="{ 'ativa': screen === 'canvas-aluno' }">
     <div class="card" style="max-width: 650px; margin: auto;">
-      <h3 style="margin-top:0; text-align:center;">Assine na Tela com o Dedo ou Caneta</h3>
-      <p style="font-size: 13px; color:#555; text-align:center;">Vire o celular de lado (horizontal) se preferir mais espaço.</p>
+      <div style="text-align: center; margin-bottom: 15px;">
+        <h3 style="margin-top:0; font-size: 20px; font-weight: 700; margin-bottom: 5px;">Assine na Tela</h3>
+        <p style="font-size: 13px; color: var(--text-muted); margin: 0;">Use o dedo ou caneta touch. Se preferir, vire o celular na horizontal.</p>
+      </div>
       
       <canvas id="canvas-assinatura"></canvas>
       
       <div class="botoes-canvas">
-        <button onclick="limparCanvas()" class="btn-secundario">Limpar</button>
-        <button id="btn-salvar-canvas" onclick="enviarAssinaturaSupabase()" class="btn-sucesso">Confirmar e Enviar Assinatura</button>
+        <button @click="limparCanvas()" class="btn-secundario">
+          <i data-lucide="trash-2"></i> Limpar
+        </button>
+        <button @click="enviarAssinaturaSupabase()" class="btn-sucesso" :disabled="loadingSignature" style="flex: 1;">
+          <span x-show="!loadingSignature">Confirmar e Enviar Assinatura</span>
+          <span x-show="loadingSignature" class="spinner"></span>
+        </button>
       </div>
     </div>
   </div>
 
-  <div id="popup-msg"></div>
+  <!-- Popup / Toast de Mensagem -->
+  <div id="popup-msg" :class="[toast.tipo, toast.visible ? 'mostrar' : '']" x-text="toast.msg"></div>
 
+  <!-- Área de Impressão -->
   <div id="area-impressao">
     <h2 style="text-align: center; margin-bottom: 30px;">FICHA DE CADASTRO E MATRÍCULA - UPT SAPEAÇU</h2>
     <hr>
     <div style="margin-top: 20px;">
-      <p><strong>Nome Completo:</strong> <span id="print-nome"></span></p>
-      <p><strong>CPF:</strong> <span id="print-cpf"></span></p>
-      <p><strong>E-mail:</strong> <span id="print-email"></span></p>
-      <p><strong>Telefone:</strong> <span id="print-telefone"></span></p>
-      <p><strong>Data de Nascimento:</strong> <span id="print-data"></span></p>
+      <p><strong>Nome Completo:</strong> <span x-text="form.nome"></span></p>
+      <p><strong>CPF:</strong> <span x-text="form.cpf"></span></p>
+      <p><strong>E-mail:</strong> <span x-text="form.email"></span></p>
+      <p><strong>Telefone:</strong> <span x-text="form.telefone"></span></p>
+      <p><strong>Data de Nascimento:</strong> <span x-text="form.dataNascimento"></span></p>
     </div>
     <div style="margin-top: 40px;">
       <p>Declaro serem verdadeiras todas as informações prestadas neste formulário eletrônico.</p>
     </div>
     <div class="assinaturas-container">
       <div class="col-assinatura">
-        <img id="print-img-aluno" src="" alt="Assinatura Aluno" style="max-height: 70px; display:block; margin: 0 auto 5px auto;"><br>
+        <img x-show="form.urlAssinatura" :src="form.urlAssinatura" alt="Assinatura Aluno" style="max-height: 70px; display:block; margin: 0 auto 5px auto;"><br>
         Assinatura do Estudante / Responsável
       </div>
       <div class="col-assinatura">
@@ -271,31 +586,26 @@
   </div>
 
   <script>
-    // CONFIGURAÇÕES SUPABASE - Troque pelas suas credenciais reais do projeto
+    // CONFIGURAÇÕES SUPABASE
     const SUPABASE_URL = "https://seqmmtlesowtcpegzsjf.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_v-dIqaW0onidjVjQ71pFMA_bCgQzRwu";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // Controle de versão para forçar atualização e limpar cache do navegador
-    const APP_VERSION = "1.0.2"; // Altere esta versão para forçar atualização dos códigos em todos os clientes
+    const APP_VERSION = "1.0.3"; 
     
     async function verificarVersaoEAtualizar() {
       const versaoSalva = localStorage.getItem("app_version");
       if (versaoSalva !== APP_VERSION) {
-        console.log("Nova versão detectada. Limpando caches e recarregando...");
         localStorage.setItem("app_version", APP_VERSION);
-        
-        // Limpa o Cache Storage
         if ('caches' in window) {
           try {
             const cacheNames = await caches.keys();
             await Promise.all(cacheNames.map(name => caches.delete(name)));
           } catch (e) {
-            console.error("Erro ao limpar cache storage:", e);
+            console.error(e);
           }
         }
-        
-        // Desregistra Service Workers
         if ('serviceWorker' in navigator) {
           try {
             const registrations = await navigator.serviceWorker.getRegistrations();
@@ -303,505 +613,455 @@
               await registration.unregister();
             }
           } catch (e) {
-            console.error("Erro ao desregistrar service worker:", e);
+            console.error(e);
           }
         }
-        
-        // Força recarregamento completo
         window.location.reload(true);
       }
     }
     verificarVersaoEAtualizar();
 
-    // Desregistrar de forma síncrona/imediata em visitas subsequentes (caso algum service-worker tente se instalar)
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(registrations => {
-        for (const registration of registrations) {
-          registration.unregister();
-        }
-      }).catch(err => console.error("Erro ao desregistrar o service worker:", err));
-    }
-
-    async function forcarAtualizacaoManual(event) {
-      if (event) event.preventDefault();
+    async function forcarAtualizacaoManual() {
       if (confirm("Deseja forçar a limpeza de cache e baixar a versão mais recente dos códigos?")) {
         localStorage.removeItem("app_version");
         if ('caches' in window) {
           try {
             const keys = await caches.keys();
-            for (const key of keys) {
-              await caches.delete(key);
-            }
-          } catch (e) {
-            console.error(e);
-          }
+            for (const key of keys) { await caches.delete(key); }
+          } catch (e) { console.error(e); }
         }
         if ('serviceWorker' in navigator) {
           try {
             const registrations = await navigator.serviceWorker.getRegistrations();
-            for (const registration of registrations) {
-              await registration.unregister();
-            }
-          } catch (e) {
-            console.error(e);
-          }
+            for (const registration of registrations) { await registration.unregister(); }
+          } catch (e) { console.error(e); }
         }
         window.location.reload(true);
       }
     }
-    
-    let popupTimeout = null;
-    function mostrarPopup(msg, tipo = 'sucesso') {
-      const pop = document.getElementById("popup-msg");
-      if (!pop) return;
-      
-      pop.className = "";
-      pop.classList.add(tipo, "mostrar");
-      pop.innerText = msg;
-      
-      if (popupTimeout) {
-        clearTimeout(popupTimeout);
-      }
-      
-      popupTimeout = setTimeout(() => {
-        pop.classList.remove("mostrar");
-      }, 4000);
-    }
 
-    let userLogado = "";
-    let fichaAtualId = null;
-    let tokenPollingInterval = null;
-    let alunoRegistroId = null;
+    // APLICATIVO ALPINE.JS
+    document.addEventListener('alpine:init', () => {
+      Alpine.data('app', () => ({
+        screen: 'login',
 
-    // Controle de Navegação de Telas
-    function navegarPara(idTela) {
-      document.querySelectorAll('.tela').forEach(t => t.classList.remove('ativa'));
-      document.getElementById(idTela).classList.add('ativa');
-      clearInterval(tokenPollingInterval);
-      
-      if(idTela === 'tela-canvas-aluno') {
-        setTimeout(configurarCanvas, 150);
-        solicitarModoPaisagem();
-      }
-    }
+        // Auth
+        email: '',
+        senha: '',
+        loadingAuth: false,
+        usuarioLogado: null,
+        nomeProfessor: '',
 
-    // LOGIN DE ADMINISTRADOR VIA SUPABASE
-    async function login() {
-      const btn = document.getElementById("btnEntrar");
-      const btnText = document.getElementById("btnEntrar-texto");
-      const btnSpinner = document.getElementById("btnEntrar-spinner");
-      
-      btn.disabled = true;
-      btnText.innerText = "Entrando...";
-      btnSpinner.style.display = "inline-block";
-      
-      const u = document.getElementById("user").value;
-      const p = document.getElementById("pass").value;
+        // Grid
+        fichas: [],
+        loadingFichas: false,
 
-      try {
-        const { data, error } = await supabase
-          .from('usuarios_adm')
-          .select('nome')
-          .eq('usuario', u)
-          .eq('senha', p)
-          .single();
+        // Form
+        fichaId: null,
+        form: {
+          nome: '',
+          cpf: '',
+          email: '',
+          telefone: '',
+          dataNascimento: '',
+          urlAssinatura: ''
+        },
+        codigoTemporario: '',
+        blocoCodigoAtivo: false,
+        pollingInterval: null,
 
-        if (error || !data) {
-          mostrarPopup("Usuário ou senha incorretos!", "erro");
-          btn.disabled = false;
-          btnText.innerText = "Entrar no Sistema";
-          btnSpinner.style.display = "none";
-          return;
+        // Aluno
+        alunoCodigo: '',
+        alunoFichaId: null,
+        loadingSignature: false,
+
+        // Canvas
+        canvasElement: null,
+        canvasContext: null,
+        desenhando: false,
+
+        // Toast Popup
+        toast: {
+          msg: '',
+          tipo: 'sucesso',
+          visible: false,
+          timeout: null
+        },
+
+        init() {
+          this.verificarSessao();
+          
+          // Watchers para renderizar ícones do Lucide
+          this.$watch('screen', () => {
+            this.$nextTick(() => {
+              if (window.lucide) window.lucide.createIcons();
+            });
+          });
+          this.$watch('fichas', () => {
+            this.$nextTick(() => {
+              if (window.lucide) window.lucide.createIcons();
+            });
+          });
+
+          // Inicializar ícones na primeira renderização
+          this.$nextTick(() => {
+            if (window.lucide) window.lucide.createIcons();
+          });
+        },
+
+        mostrarPopup(msg, tipo = 'sucesso') {
+          this.toast.msg = msg;
+          this.toast.tipo = tipo;
+          this.toast.visible = true;
+
+          if (this.toast.timeout) clearTimeout(this.toast.timeout);
+          this.toast.timeout = setTimeout(() => {
+            this.toast.visible = false;
+          }, 4000);
+        },
+
+        navegarPara(idTela) {
+          this.screen = idTela;
+          clearInterval(this.pollingInterval);
+          this.blocoCodigoAtivo = false;
+
+          if (idTela === 'canvas-aluno') {
+            this.$nextTick(() => {
+              this.configurarCanvas();
+            });
+          }
+        },
+
+        async verificarSessao() {
+          const { data: { session }, error } = await supabase.auth.getSession();
+          if (session && session.user) {
+            this.usuarioLogado = session.user;
+            this.nomeProfessor = session.user.user_metadata?.nome || session.user.email.split('@')[0];
+            this.navegarPara('adm');
+            await this.carregarFichasGrid();
+          }
+        },
+
+        async login() {
+          this.loadingAuth = true;
+          try {
+            const { data, error } = await supabase.auth.signInWithPassword({
+              email: this.email,
+              password: this.senha
+            });
+
+            if (error) throw error;
+
+            this.usuarioLogado = data.user;
+            this.nomeProfessor = data.user.user_metadata?.nome || data.user.email.split('@')[0];
+            this.mostrarPopup("Login realizado com sucesso!", "sucesso");
+            this.navegarPara('adm');
+            await this.carregarFichasGrid();
+          } catch (erro) {
+            this.mostrarPopup("Erro no login: " + erro.message, "erro");
+          } finally {
+            this.loadingAuth = false;
+          }
+        },
+
+        async logout() {
+          await supabase.auth.signOut();
+          this.usuarioLogado = null;
+          this.nomeProfessor = '';
+          this.email = '';
+          this.senha = '';
+          this.navegarPara('login');
+        },
+
+        async carregarFichasGrid() {
+          this.loadingFichas = true;
+          try {
+            const { data, error } = await supabase.from('cadastros').select('*').order('created_at', { ascending: false });
+            if (error) throw error;
+            this.fichas = data;
+          } catch (erro) {
+            this.mostrarPopup("Erro ao buscar fichas: " + erro.message, "erro");
+          } finally {
+            this.loadingFichas = false;
+          }
+        },
+
+        abrirNovaFicha() {
+          this.fichaId = null;
+          this.form = {
+            nome: '',
+            cpf: '',
+            email: '',
+            telefone: '',
+            dataNascimento: '',
+            urlAssinatura: ''
+          };
+          this.codigoTemporario = '';
+          this.blocoCodigoAtivo = false;
+          this.navegarPara('formulario');
+        },
+
+        async editarFicha(id) {
+          this.fichaId = id;
+          try {
+            const { data, error } = await supabase.from('cadastros').select('*').eq('id', id).single();
+            if (error) throw error;
+
+            this.form = {
+              nome: data.nome,
+              cpf: data.cpf,
+              email: data.email || '',
+              telefone: data.telefone || '',
+              dataNascimento: data.data_nascimento || '',
+              urlAssinatura: data.url_assinatura || ''
+            };
+            this.codigoTemporario = '';
+            this.blocoCodigoAtivo = false;
+            this.navegarPara('formulario');
+          } catch (erro) {
+            this.mostrarPopup("Erro ao buscar dados da ficha: " + erro.message, "erro");
+          }
+        },
+
+        async gerarCodigoTemporario() {
+          if (!this.form.nome || !this.form.cpf) {
+            this.mostrarPopup("Por favor, preencha o Nome e o CPF antes de colher a assinatura.", "alerta");
+            return;
+          }
+
+          const tokenAleatorio = "UPT-" + Math.floor(1000 + Math.random() * 9000);
+
+          if (!this.fichaId) {
+            const { data, error } = await supabase.from('cadastros').insert([{
+              nome: this.form.nome,
+              cpf: this.form.cpf,
+              email: this.form.email,
+              telefone: this.form.telefone,
+              data_nascimento: this.form.dataNascimento || null,
+              codigo_temporario: tokenAleatorio,
+              status_assinatura: 'pendente'
+            }]).select().single();
+
+            if (error) {
+              this.mostrarPopup("Erro ao iniciar captura: " + error.message, "erro");
+              return;
+            }
+            this.fichaId = data.id;
+          } else {
+            const { error } = await supabase.from('cadastros').update({
+              codigo_temporario: tokenAleatorio,
+              status_assinatura: 'pendente'
+            }).eq('id', this.fichaId);
+
+            if (error) {
+              this.mostrarPopup("Erro ao atualizar token: " + error.message, "erro");
+              return;
+            }
+          }
+
+          this.codigoTemporario = tokenAleatorio;
+          this.blocoCodigoAtivo = true;
+
+          // Polling
+          this.pollingInterval = setInterval(async () => {
+            const { data } = await supabase.from('cadastros').select('url_assinatura, status_assinatura').eq('id', this.fichaId).single();
+            if (data && data.url_assinatura && data.status_assinatura === 'assinado') {
+              clearInterval(this.pollingInterval);
+              this.form.urlAssinatura = data.url_assinatura;
+              this.blocoCodigoAtivo = false;
+              this.codigoTemporario = '';
+              this.mostrarPopup("Assinatura capturada com sucesso!", "sucesso");
+            }
+          }, 3000);
+
+          // Expiração em 10 min
+          setTimeout(async () => {
+            clearInterval(this.pollingInterval);
+            if (this.blocoCodigoAtivo) {
+              await supabase.from('cadastros').update({ codigo_temporario: null }).eq('id', this.fichaId);
+              this.blocoCodigoAtivo = false;
+              this.codigoTemporario = '';
+              this.mostrarPopup("O código expirou. Gere outro se necessário.", "alerta");
+            }
+          }, 600000);
+        },
+
+        async salvarFichaCompleta() {
+          if (!this.form.nome || !this.form.cpf) {
+            this.mostrarPopup("Por favor, preencha o Nome e o CPF.", "alerta");
+            return;
+          }
+
+          try {
+            if (this.fichaId) {
+              const { error } = await supabase.from('cadastros').update({
+                nome: this.form.nome,
+                cpf: this.form.cpf,
+                email: this.form.email,
+                telefone: this.form.telefone,
+                data_nascimento: this.form.dataNascimento || null,
+                codigo_temporario: null
+              }).eq('id', this.fichaId);
+
+              if (error) throw error;
+            } else {
+              const { error } = await supabase.from('cadastros').insert([{
+                nome: this.form.nome,
+                cpf: this.form.cpf,
+                email: this.form.email,
+                telefone: this.form.telefone,
+                data_nascimento: this.form.dataNascimento || null,
+                status_assinatura: 'pendente'
+              }]);
+
+              if (error) throw error;
+            }
+
+            this.mostrarPopup("Ficha salva com sucesso!", "sucesso");
+            this.navegarPara('adm');
+            await this.carregarFichasGrid();
+          } catch (erro) {
+            this.mostrarPopup("Erro ao salvar a ficha: " + erro.message, "erro");
+          }
+        },
+
+        async validarCodigoAluno() {
+          const codigo = this.alunoCodigo.trim().toUpperCase();
+          if (!codigo) {
+            this.mostrarPopup("Por favor, insira o código.", "alerta");
+            return;
+          }
+
+          try {
+            const { data, error } = await supabase
+              .from('cadastros')
+              .select('id, nome')
+              .eq('codigo_temporario', codigo)
+              .single();
+
+            if (error || !data) {
+              this.mostrarPopup("Código inválido ou expirado.", "erro");
+              return;
+            }
+
+            this.alunoFichaId = data.id;
+            this.navegarPara('canvas-aluno');
+          } catch (erro) {
+            this.mostrarPopup("Erro ao validar código.", "erro");
+          }
+        },
+
+        configurarCanvas() {
+          const canvas = document.getElementById('canvas-assinatura');
+          if (!canvas) return;
+          const ctx = canvas.getContext('2d');
+          this.canvasElement = canvas;
+          this.canvasContext = ctx;
+
+          const rect = canvas.getBoundingClientRect();
+          canvas.width = rect.width;
+          canvas.height = rect.height;
+
+          ctx.strokeStyle = "#000000";
+          ctx.lineWidth = 3;
+          ctx.lineCap = "round";
+
+          canvas.addEventListener('mousedown', (e) => {
+            this.desenhando = true;
+            const pos = this.obterPosicaoMouse(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+          });
+
+          canvas.addEventListener('mousemove', (e) => {
+            if (!this.desenhando) return;
+            const pos = this.obterPosicaoMouse(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+          });
+
+          canvas.addEventListener('mouseup', () => this.desenhando = false);
+          canvas.addEventListener('mouseout', () => this.desenhando = false);
+
+          canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.desenhando = true;
+            const pos = this.obterPosicaoTouch(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+          });
+
+          canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!this.desenhando) return;
+            const pos = this.obterPosicaoTouch(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+          });
+
+          canvas.addEventListener('touchend', () => this.desenhando = false);
+        },
+
+        obterPosicaoMouse(e) {
+          const rect = this.canvasElement.getBoundingClientRect();
+          return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+          };
+        },
+
+        obterPosicaoTouch(e) {
+          const rect = this.canvasElement.getBoundingClientRect();
+          const touch = e.touches[0];
+          return {
+            x: touch.clientX - rect.left,
+            y: touch.clientY - rect.top
+          };
+        },
+
+        limparCanvas() {
+          if (this.canvasElement && this.canvasContext) {
+            this.canvasContext.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
+          }
+        },
+
+        async enviarAssinaturaSupabase() {
+          if (!this.alunoFichaId) {
+            this.mostrarPopup("Erro: Registro do aluno não identificado.", "erro");
+            return;
+          }
+
+          const dataURL = this.canvasElement.toDataURL('image/png');
+          this.loadingSignature = true;
+
+          try {
+            const { error } = await supabase
+              .from('cadastros')
+              .update({
+                url_assinatura: dataURL,
+                status_assinatura: 'assinado',
+                codigo_temporario: null
+              })
+              .eq('id', this.alunoFichaId);
+
+            if (error) throw error;
+
+            this.mostrarPopup("Assinatura enviada com sucesso!", "sucesso");
+            this.alunoCodigo = '';
+            this.alunoFichaId = null;
+            this.navegarPara('login');
+          } catch (erro) {
+            this.mostrarPopup("Erro ao enviar assinatura: " + erro.message, "erro");
+          } finally {
+            this.loadingSignature = false;
+          }
+        },
+
+        visualizarDocumento() {
+          window.print();
         }
-
-        userLogado = u;
-        document.getElementById("nome-prof").innerText = "Olá, " + data.nome;
-        navegarPara('tela-adm');
-        carregarFichasGrid();
-      } catch (erro) {
-        mostrarPopup("Erro ao conectar com o Supabase.", "erro");
-        btn.disabled = false;
-        btnText.innerText = "Entrar no Sistema";
-        btnSpinner.style.display = "none";
-      }
-    }
-
-    function logout() {
-      userLogado = "";
-      document.getElementById("user").value = "";
-      document.getElementById("pass").value = "";
-      
-      // Reset details of login button on logout
-      const btn = document.getElementById("btnEntrar");
-      const btnText = document.getElementById("btnEntrar-texto");
-      const btnSpinner = document.getElementById("btnEntrar-spinner");
-      if (btn) btn.disabled = false;
-      if (btnText) btnText.innerText = "Entrar no Sistema";
-      if (btnSpinner) btnSpinner.style.display = "none";
-
-      navegarPara('tela-login');
-    }
-
-    // CARREGAR LISTA/GRID DE FICHAS DIRETO DO SUPABASE
-    async function carregarFichasGrid() {
-      const { data, error } = await supabase.from('cadastros').select('*').order('created_at', { ascending: false });
-      if (error) return console.error(error);
-
-      const tbody = document.getElementById("grid-fichas-corpo");
-      tbody.innerHTML = "";
-
-      data.forEach(item => {
-        const tr = document.createElement("tr");
-        const statusAssina = item.url_assinatura 
-          ? `<span style="color:green;font-weight:bold;">✓ Assinado</span>` 
-          : `<span style="color:#e67e22;">Pendente</span>`;
-
-        tr.innerHTML = `
-          <td>${item.nome}</td>
-          <td>${item.cpf}</td>
-          <td>${statusAssina}</td>
-          <td class="acoes-grid">
-            <button onclick="editarFicha('${item.id}')" style="background:#1a73e8;">Editar Ficha</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    // ABRIR FORMULÁRIO PARA NOVO CADASTRO
-    function abrirNovaFicha() {
-      fichaAtualId = null;
-      document.getElementById("titulo-form").innerText = "Nova Ficha de Cadastro";
-      document.getElementById("form-id").value = "";
-      document.getElementById("form-nome").value = "";
-      document.getElementById("form-cpf").value = "";
-      document.getElementById("form-email").value = "";
-      document.getElementById("form-telefone").value = "";
-      document.getElementById("form-data-nasc").value = "";
-      
-      document.getElementById("preview-assinatura-container").style.display = "none";
-      document.getElementById("btn-visualizar-doc").style.display = "none";
-      document.getElementById("bloco-gerar-codigo").style.display = "block";
-      document.getElementById("bloco-codigo-ativo").style.display = "none";
-      document.getElementById("btn-acao-assinatura").innerText = "Capturar Assinatura";
-
-      navegarPara('tela-formulario');
-    }
-
-    // ABRIR FORMULÁRIO PARA EDITAR EXISTENTE
-    async function editarFicha(id) {
-      fichaAtualId = id;
-      document.getElementById("titulo-form").innerText = "Editar Ficha de Cadastro";
-      
-      const { data, error } = await supabase.from('cadastros').select('*').eq('id', id).single();
-      if(error) { mostrarPopup("Erro ao buscar dados da ficha.", "erro"); return; }
-
-      document.getElementById("form-id").value = data.id;
-      document.getElementById("form-nome").value = data.nome;
-      document.getElementById("form-cpf").value = data.cpf;
-      document.getElementById("form-email").value = data.email || "";
-      document.getElementById("form-telefone").value = data.telefone || "";
-      document.getElementById("form-data-nasc").value = data.data_nascimento || "";
-
-      document.getElementById("bloco-codigo-ativo").style.display = "none";
-      document.getElementById("bloco-gerar-codigo").style.display = "block";
-
-      if(data.url_assinatura) {
-        document.getElementById("form-img-preview").src = data.url_assinatura;
-        document.getElementById("preview-assinatura-container").style.display = "block";
-        document.getElementById("btn-acao-assinatura").innerText = "Recapturar Assinatura";
-        document.getElementById("btn-visualizar-doc").style.display = "inline-block";
-      } else {
-        document.getElementById("preview-assinatura-container").style.display = "none";
-        document.getElementById("btn-acao-assinatura").innerText = "Capturar Assinatura";
-        document.getElementById("btn-visualizar-doc").style.display = "none";
-      }
-
-      navegarPara('tela-formulario');
-    }
-
-    // GERAR CÓDIGO TEMPORÁRIO (VALIDO POR 10 MINUTOS OU ATÉ SALVAR)
-    async function gerarCodigoTemporario() {
-      const nome = document.getElementById("form-nome").value;
-      const cpf = document.getElementById("form-cpf").value;
-      if(!nome || !cpf) { mostrarPopup("Por favor, preencha o Nome e o CPF antes de colher a assinatura.", "alerta"); return; }
-
-      const tokenAleatorio = "UPT-" + Math.floor(1000 + Math.random() * 9000);
-      
-      if(!fichaAtualId) {
-        const { data, error } = await supabase.from('cadastros').insert([{
-          nome: nome, cpf: cpf,
-          email: document.getElementById("form-email").value,
-          telefone: document.getElementById("form-telefone").value,
-          data_nascimento: document.getElementById("form-data-nasc").value || null,
-          codigo_temporario: tokenAleatorio,
-          status_assinatura: 'pendente'
-        }]).select().single();
-        
-        if(error) { mostrarPopup("Erro ao iniciar captura: " + error.message, "erro"); return; }
-        fichaAtualId = data.id;
-      } else {
-        const { error } = await supabase.from('cadastros').update({
-          codigo_temporario: tokenAleatorio,
-          status_assinatura: 'pendente'
-        }).eq('id', fichaAtualId);
-        
-        if(error) { mostrarPopup("Erro ao atualizar token: " + error.message, "erro"); return; }
-      }
-
-      document.getElementById("display-codigo").innerText = tokenAleatorio;
-      document.getElementById("bloco-gerar-codigo").style.display = "none";
-      document.getElementById("bloco-codigo-ativo").style.display = "block";
-
-      // Realtime Polling para verificar atualização da assinatura
-      tokenPollingInterval = setInterval(async () => {
-        const { data } = await supabase.from('cadastros').select('url_assinatura, status_assinatura').eq('id', fichaAtualId).single();
-        if(data && data.url_assinatura && data.status_assinatura === 'assinado') {
-          clearInterval(tokenPollingInterval);
-          document.getElementById("form-img-preview").src = data.url_assinatura;
-          document.getElementById("preview-assinatura-container").style.display = "block";
-          document.getElementById("bloco-codigo-ativo").style.display = "none";
-          document.getElementById("bloco-gerar-codigo").style.display = "block";
-          document.getElementById("btn-acao-assinatura").innerText = "Recapturar Assinatura";
-          document.getElementById("btn-visualizar-doc").style.display = "inline-block";
-          mostrarPopupSucesso();
-        }
-      }, 3000);
-
-      // Expiração automática de 10 minutos
-      setTimeout(async () => {
-        clearInterval(tokenPollingInterval);
-        if(document.getElementById("bloco-codigo-ativo").style.display === "block") {
-          await supabase.from('cadastros').update({ codigo_temporario: null }).eq('id', fichaAtualId);
-          document.getElementById("bloco-codigo-ativo").style.display = "none";
-          document.getElementById("bloco-gerar-codigo").style.display = "block";
-          mostrarPopup("O código expirou. Gere outro se necessário.", "alerta");
-        }
-      }, 600000);
-    }
-
-    function mostrarPopupSucesso() {
-      mostrarPopup("Assinatura capturada com sucesso!", "sucesso");
-    }
-
-    // SALVAR DADOS DO FORMULÁRIO COMPLETO
-    async function salvarFichaCompleta() {
-      const nome = document.getElementById("form-nome").value;
-      const cpf = document.getElementById("form-cpf").value;
-      const email = document.getElementById("form-email").value;
-      const telefone = document.getElementById("form-telefone").value;
-      const dataNasc = document.getElementById("form-data-nasc").value;
-
-      if (!nome || !cpf) {
-        mostrarPopup("Por favor, preencha o Nome e o CPF.", "alerta");
-        return;
-      }
-
-      try {
-        if (fichaAtualId) {
-          const { error } = await supabase.from('cadastros').update({
-            nome,
-            cpf,
-            email,
-            telefone,
-            data_nascimento: dataNasc || null,
-            codigo_temporario: null
-          }).eq('id', fichaAtualId);
-
-          if (error) throw error;
-        } else {
-          const { error } = await supabase.from('cadastros').insert([{
-            nome,
-            cpf,
-            email,
-            telefone,
-            data_nascimento: dataNasc || null,
-            status_assinatura: 'pendente'
-          }]);
-
-          if (error) throw error;
-        }
-
-        mostrarPopup("Ficha salva com sucesso!", "sucesso");
-        navegarPara('tela-adm');
-        carregarFichasGrid();
-      } catch (error) {
-        mostrarPopup("Erro ao salvar a ficha: " + error.message, "erro");
-      }
-    }
-
-    // VALIDAR CÓDIGO INSERIDO PELO ALUNO
-    async function validarCodigoAluno() {
-      const codigoInput = document.getElementById("aluno-codigo-input");
-      const codigo = codigoInput.value.trim().toUpperCase();
-
-      if (!codigo) {
-        mostrarPopup("Por favor, insira o código.", "alerta");
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from('cadastros')
-          .select('id, nome')
-          .eq('codigo_temporario', codigo)
-          .single();
-
-        if (error || !data) {
-          mostrarPopup("Código inválido ou expirado.", "erro");
-          return;
-        }
-
-        alunoRegistroId = data.id;
-        navegarPara('tela-canvas-aluno');
-      } catch (erro) {
-        mostrarPopup("Erro ao validar código.", "erro");
-        console.error(erro);
-      }
-    }
-
-    // CONFIGURAÇÃO DO CANVAS DE ASSINATURA
-    let canvas, ctx;
-    let desenhando = false;
-
-    function configurarCanvas() {
-      canvas = document.getElementById('canvas-assinatura');
-      if (!canvas) return;
-      ctx = canvas.getContext('2d');
-
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-
-      ctx.strokeStyle = "#000000";
-      ctx.lineWidth = 3;
-      ctx.lineCap = "round";
-
-      canvas.addEventListener('mousedown', iniciarDesenho);
-      canvas.addEventListener('mousemove', desenhar);
-      canvas.addEventListener('mouseup', pararDesenho);
-      canvas.addEventListener('mouseout', pararDesenho);
-
-      canvas.addEventListener('touchstart', iniciarDesenhoTouch);
-      canvas.addEventListener('touchmove', desenharTouch);
-      canvas.addEventListener('touchend', pararDesenho);
-    }
-
-    function obterPosicaoMouse(e) {
-      const rect = canvas.getBoundingClientRect();
-      return {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      };
-    }
-
-    function obterPosicaoTouch(e) {
-      const rect = canvas.getBoundingClientRect();
-      const touch = e.touches[0];
-      return {
-        x: touch.clientX - rect.left,
-        y: touch.clientY - rect.top
-      };
-    }
-
-    function iniciarDesenho(e) {
-      desenhando = true;
-      const pos = obterPosicaoMouse(e);
-      ctx.beginPath();
-      ctx.moveTo(pos.x, pos.y);
-    }
-
-    function iniciarDesenhoTouch(e) {
-      e.preventDefault();
-      desenhando = true;
-      const pos = obterPosicaoTouch(e);
-      ctx.beginPath();
-      ctx.moveTo(pos.x, pos.y);
-    }
-
-    function desenhar(e) {
-      if (!desenhando) return;
-      const pos = obterPosicaoMouse(e);
-      ctx.lineTo(pos.x, pos.y);
-      ctx.stroke();
-    }
-
-    function desenharTouch(e) {
-      e.preventDefault();
-      if (!desenhando) return;
-      const pos = obterPosicaoTouch(e);
-      ctx.lineTo(pos.x, pos.y);
-      ctx.stroke();
-    }
-
-    function pararDesenho() {
-      desenhando = false;
-    }
-
-    function limparCanvas() {
-      if (canvas && ctx) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
-    }
-
-    // ENVIAR ASSINATURA PARA O SUPABASE (BASE64)
-    async function enviarAssinaturaSupabase() {
-      if (!alunoRegistroId) {
-        mostrarPopup("Erro: Registro do aluno não identificado.", "erro");
-        return;
-      }
-
-      const dataURL = canvas.toDataURL('image/png');
-
-      const btn = document.getElementById("btn-salvar-canvas");
-      btn.disabled = true;
-      btn.innerText = "Enviando...";
-
-      try {
-        const { error } = await supabase
-          .from('cadastros')
-          .update({
-            url_assinatura: dataURL,
-            status_assinatura: 'assinado',
-            codigo_temporario: null
-          })
-          .eq('id', alunoRegistroId);
-
-        if (error) throw error;
-
-        mostrarPopup("Assinatura enviada com sucesso!", "sucesso");
-        navegarPara('tela-login');
-      } catch (erro) {
-        mostrarPopup("Erro ao enviar assinatura: " + erro.message, "erro");
-        btn.disabled = false;
-        btn.innerText = "Confirmar e Enviar Assinatura";
-      }
-    }
-
-    // FORÇAR MODO PAISAGEM (OPCIONAL/DECORATIVO)
-    function solicitarModoPaisagem() {
-      if (screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock('landscape').catch(() => {
-          // Ignora se o navegador não der suporte ou permissão
-        });
-      }
-    }
-
-    // DOCUMENT PREVIEW & PRINT
-    function visualizarDocumento() {
-      document.getElementById("print-nome").innerText = document.getElementById("form-nome").value;
-      document.getElementById("print-cpf").innerText = document.getElementById("form-cpf").value;
-      document.getElementById("print-email").innerText = document.getElementById("form-email").value;
-      document.getElementById("print-telefone").innerText = document.getElementById("form-telefone").value;
-      document.getElementById("print-data").innerText = document.getElementById("form-data-nasc").value;
-
-      const previewImg = document.getElementById("form-img-preview");
-      if (previewImg && previewImg.src) {
-        document.getElementById("print-img-aluno").src = previewImg.src;
-      }
-
-      window.print();
-    }
+      }));
+    });
   </script>
 </body>
 </html>
