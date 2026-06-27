@@ -9,20 +9,20 @@
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#ea580c">
 
-  <!-- Supabase, Lucide & Alpine.js CDNs with fallbacks -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Supabase, Lucide (UMD) & Alpine.js CDNs -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script>
     if (!window.supabase) {
-      document.write('<script src="https://unpkg.com/@supabase/supabase-js@2"><\/script>');
+      document.write('<scr'+'ipt src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"><\/scr'+'ipt>');
     }
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
   <script>
     if (!window.lucide) {
-      document.write('<script src="https://unpkg.com/lucide@latest"><\/script>');
+      document.write('<scr'+'ipt src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"><\/scr'+'ipt>');
     }
   </script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
 
   <style>
     :root {
@@ -39,6 +39,16 @@
 
     [x-cloak] {
       display: none !important;
+    }
+
+    /* Loading inicial - visivel por padrao ate o Alpine ocultar */
+    #loading-inicial {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 80vh;
+      text-align: center;
     }
 
     body {
@@ -344,30 +354,15 @@
 </head>
 <body x-data="app">
 
-  <!-- Indicador de Carregamento Inicial (Ocultado assim que o Alpine inicia) -->
-  <div x-show="false" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; text-align: center;">
-    <span class="spinner" style="border-top-color: var(--primary); width: 32px; height: 32px; border-width: 3px;"></span>
+
+  <!-- Indicador de Carregamento Inicial (visível antes do Alpine carregar) -->
+  <div id="loading-inicial">
+    <span class="spinner" style="border-top-color: var(--primary); width: 36px; height: 36px; border-width: 3px;"></span>
     <p style="margin-top: 15px; color: var(--text-muted); font-size: 14px; font-weight: 500;">Carregando o sistema...</p>
   </div>
 
-  <!-- Aviso de Erro do Supabase (Caso o CDN falhe) -->
-  <div x-show="supabaseError" x-cloak style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; text-align: center; padding: 20px;">
-    <div class="card" style="border: 1px solid #fee2e2; max-width: 450px; text-align: center; margin: auto;">
-      <div style="background: #fef2f2; width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto;">
-        <i data-lucide="alert-triangle" style="width: 32px; height: 32px; color: #ef4444;"></i>
-      </div>
-      <h3 style="margin: 0 0 10px 0; font-size: 20px; font-weight: 700; color: #991b1b;">Erro de Conexão</h3>
-      <p style="font-size: 14px; color: #7f1d1d; margin: 0 0 20px 0; line-height: 1.5;">
-        Não foi possível conectar com o banco de dados do Supabase. Verifique sua conexão com a internet ou se há bloqueadores de scripts ativos.
-      </p>
-      <button @click="window.location.reload(true)" style="width: auto;" class="btn-secundario">
-        Tentar Novamente
-      </button>
-    </div>
-  </div>
-
-  <!-- Conteúdo do Aplicativo (Só exibe se o Supabase carregar) -->
-  <div x-show="!supabaseError" x-cloak>
+  <!-- Conteúdo do Aplicativo (oculto por x-cloak, exibido quando Alpine carrega) -->
+  <div x-cloak>
     
     <!-- Tela de Login -->
     <div class="tela" :class="{ 'ativa': screen === 'login' }">
@@ -739,6 +734,10 @@
         },
 
         init() {
+          // Esconder o spinner de loading assim que o Alpine inicializar
+          const loadingEl = document.getElementById('loading-inicial');
+          if (loadingEl) loadingEl.style.display = 'none';
+
           if (this.supabaseError) {
             this.$nextTick(() => {
               if (window.lucide) window.lucide.createIcons();
