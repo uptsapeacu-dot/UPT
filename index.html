@@ -9,10 +9,20 @@
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#ea580c">
 
-  <!-- Supabase, Lucide & Alpine.js CDNs -->
+  <!-- Supabase, Lucide & Alpine.js CDNs with fallbacks -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script>
+    if (!window.supabase) {
+      document.write('<script src="https://unpkg.com/@supabase/supabase-js@2"><\/script>');
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest"></script>
+  <script>
+    if (!window.lucide) {
+      document.write('<script src="https://unpkg.com/lucide@latest"><\/script>');
+    }
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js"></script>
 
   <style>
     :root {
@@ -25,6 +35,10 @@
       --text-muted: #64748b;
       --border: rgba(0, 0, 0, 0.08);
       --border-focus: #f97316;
+    }
+
+    [x-cloak] {
+      display: none !important;
     }
 
     body {
@@ -330,230 +344,257 @@
 </head>
 <body x-data="app">
 
-  <!-- Tela de Login -->
-  <div class="tela" :class="{ 'ativa': screen === 'login' }">
-    <div class="login-header">
-      <button class="btn-submeter-topo" @click="navegarPara('captura-codigo')">
-        <i data-lucide="signature"></i> Submeter Assinatura
-      </button>
-    </div>
-    <form class="card" style="max-width: 450px; margin: auto;" @submit.prevent="login()">
-      <div style="text-align: center; margin-bottom: 20px;">
-        <div style="background: var(--primary-light); width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
-          <i data-lucide="lock" style="width: 32px; height: 32px; color: var(--primary);"></i>
-        </div>
-        <h3 style="margin: 0; font-size: 22px; font-weight: 700;">Fichas de Cadastro UPT</h3>
-        <p style="font-size: 14px; color: var(--text-muted); margin: 5px 0 0 0;">Faça login na sua conta de coordenador</p>
-      </div>
-
-      <div class="input-icon-container">
-        <i data-lucide="mail"></i>
-        <input type="email" x-model="email" placeholder="E-mail" required>
-      </div>
-
-      <div class="input-icon-container" style="margin-top: 10px;">
-        <i data-lucide="key-round"></i>
-        <input type="password" x-model="senha" placeholder="Senha" required>
-      </div>
-
-      <button type="submit" :disabled="loadingAuth" style="margin-top: 15px; width: 100%;">
-        <span x-show="!loadingAuth">Entrar no Sistema</span>
-        <span x-show="loadingAuth" class="spinner"></span>
-      </button>
-
-      <a href="#" @click.prevent="forcarAtualizacaoManual()" style="display:block; text-align:center; font-size:12px; margin-top:20px; color: var(--text-muted); text-decoration:none; transition: 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">
-        🔄 Forçar Atualização (Limpar Cache)
-      </a>
-    </form>
+  <!-- Indicador de Carregamento Inicial (Ocultado assim que o Alpine inicia) -->
+  <div x-show="false" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; text-align: center;">
+    <span class="spinner" style="border-top-color: var(--primary); width: 32px; height: 32px; border-width: 3px;"></span>
+    <p style="margin-top: 15px; color: var(--text-muted); font-size: 14px; font-weight: 500;">Carregando o sistema...</p>
   </div>
 
-  <!-- Tela Administrativa (Painel do Professor) -->
-  <div class="tela" :class="{ 'ativa': screen === 'adm' }">
-    <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <div style="background: var(--primary-light); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-            <i data-lucide="user" style="width: 18px; height: 18px; color: var(--primary);"></i>
-          </div>
-          <span style="font-weight:600; font-size: 16px;" x-text="'Olá, ' + nomeProfessor"></span>
-        </div>
-        <button @click="logout()" style="width:auto; padding:6px 16px;" class="btn-perigo">
-          <i data-lucide="log-out" style="width:16px; height:16px;"></i> Sair
-        </button>
+  <!-- Aviso de Erro do Supabase (Caso o CDN falhe) -->
+  <div x-show="supabaseError" x-cloak style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; text-align: center; padding: 20px;">
+    <div class="card" style="border: 1px solid #fee2e2; max-width: 450px; text-align: center; margin: auto;">
+      <div style="background: #fef2f2; width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto;">
+        <i data-lucide="alert-triangle" style="width: 32px; height: 32px; color: #ef4444;"></i>
       </div>
-
-      <div style="display:flex; gap:12px; margin-bottom:20px;">
-        <button @click="abrirNovaFicha()" class="btn-sucesso" style="width: auto;">
-          <i data-lucide="plus"></i> Criar Nova Ficha
-        </button>
-        <button @click="carregarFichasGrid()" class="btn-secundario" style="width: auto;" :disabled="loadingFichas">
-          <i data-lucide="refresh-cw" :class="{ 'spinner': loadingFichas }" style="width:16px; height:16px;"></i> Atualizar Lista
-        </button>
-      </div>
-
-      <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 15px;">Fichas Cadastradas</h3>
-      <div style="overflow-x: auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>CPF</th>
-              <th>Assinatura</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            <template x-for="item in fichas" :key="item.id">
-              <tr>
-                <td x-text="item.nome" style="font-weight:600;"></td>
-                <td x-text="item.cpf" style="color: var(--text-muted);"></td>
-                <td>
-                  <template x-if="item.url_assinatura">
-                    <span class="badge badge-sucesso">
-                      <i data-lucide="check" style="width: 14px; height: 14px;"></i> Assinado
-                    </span>
-                  </template>
-                  <template x-if="!item.url_assinatura">
-                    <span class="badge badge-pendente">
-                      <i data-lucide="clock" style="width: 14px; height: 14px;"></i> Pendente
-                    </span>
-                  </template>
-                </td>
-                <td class="acoes-grid">
-                  <button @click="editarFicha(item.id)" class="btn-secundario">
-                    <i data-lucide="edit-3" style="width: 14px; height: 14px;"></i> Editar
-                  </button>
-                </td>
-              </tr>
-            </template>
-            <template x-if="fichas.length === 0 && !loadingFichas">
-              <tr>
-                <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 30px;">
-                  Nenhuma ficha cadastrada ainda.
-                </td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
-      </div>
+      <h3 style="margin: 0 0 10px 0; font-size: 20px; font-weight: 700; color: #991b1b;">Erro de Conexão</h3>
+      <p style="font-size: 14px; color: #7f1d1d; margin: 0 0 20px 0; line-height: 1.5;">
+        Não foi possível conectar com o banco de dados do Supabase. Verifique sua conexão com a internet ou se há bloqueadores de scripts ativos.
+      </p>
+      <button @click="window.location.reload(true)" style="width: auto;" class="btn-secundario">
+        Tentar Novamente
+      </button>
     </div>
   </div>
 
-  <!-- Tela de Formulário (Cadastro / Edição) -->
-  <div class="tela" :class="{ 'ativa': screen === 'formulario' }">
-    <div class="card">
-      <h3 style="font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 20px;" x-text="fichaId ? 'Editar Ficha de Cadastro' : 'Nova Ficha de Cadastro'"></h3>
-      
-      <div class="form-grupo">
-        <div>
-          <label>Nome Completo:</label>
-          <input type="text" x-model="form.nome" placeholder="Nome do Aluno">
-        </div>
-        <div>
-          <label>CPF:</label>
-          <input type="text" x-model="form.cpf" placeholder="000.000.000-00">
-        </div>
+  <!-- Conteúdo do Aplicativo (Só exibe se o Supabase carregar) -->
+  <div x-show="!supabaseError" x-cloak>
+    
+    <!-- Tela de Login -->
+    <div class="tela" :class="{ 'ativa': screen === 'login' }">
+      <div class="login-header">
+        <button class="btn-submeter-topo" @click="navegarPara('captura-codigo')">
+          <i data-lucide="signature"></i> Submeter Assinatura
+        </button>
       </div>
-
-      <div class="form-grupo" style="margin-top: 10px;">
-        <div>
-          <label>E-mail:</label>
-          <input type="email" x-model="form.email" placeholder="exemplo@email.com">
-        </div>
-        <div>
-          <label>Telefone:</label>
-          <input type="text" x-model="form.telefone" placeholder="(75) 99999-9999">
-        </div>
-      </div>
-
-      <div style="margin-top: 10px;">
-        <label>Data de Nascimento:</label>
-        <input type="date" x-model="form.dataNascimento">
-      </div>
-
-      <!-- Coleta de Assinatura -->
-      <div class="box-assinatura">
-        <h4 style="margin: 0 0 10px 0; font-size: 16px; font-weight: 700; color: var(--primary-hover);">Coleta de Assinatura Digital</h4>
-        
-        <div x-show="form.urlAssinatura">
-          <p style="color: #065f46; font-weight: 600; margin: 5px 0; display: inline-flex; align-items: center; gap: 4px;">
-            <i data-lucide="check-circle-2" style="width:16px;height:16px;"></i> Assinatura carregada
-          </p>
-          <div style="background: white; border-radius: 8px; padding: 10px; max-width: 300px; margin: 10px auto; border: 1px solid rgba(0,0,0,0.06);">
-            <img :src="form.urlAssinatura" class="img-preview" alt="Assinatura">
+      <form class="card" style="max-width: 450px; margin: auto;" @submit.prevent="login()">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <div style="background: var(--primary-light); width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
+            <i data-lucide="lock" style="width: 32px; height: 32px; color: var(--primary);"></i>
           </div>
+          <h3 style="margin: 0; font-size: 22px; font-weight: 700;">Fichas de Cadastro UPT</h3>
+          <p style="font-size: 14px; color: var(--text-muted); margin: 5px 0 0 0;">Faça login na sua conta de coordenador</p>
         </div>
-        
-        <div x-show="!blocoCodigoAtivo">
-          <p style="font-size:13px; color: var(--text-muted); margin: 5px 0 10px 0;">Clique para gerar o código que o aluno usará no celular.</p>
-          <button type="button" @click="gerarCodigoTemporario()" style="width: auto;">
-            <i data-lucide="smartphone"></i> <span x-text="form.urlAssinatura ? 'Recapturar Assinatura' : 'Capturar Assinatura'"></span>
+
+        <div class="input-icon-container">
+          <i data-lucide="mail"></i>
+          <input type="email" x-model="email" placeholder="E-mail" required>
+        </div>
+
+        <div class="input-icon-container" style="margin-top: 10px;">
+          <i data-lucide="key-round"></i>
+          <input type="password" x-model="senha" placeholder="Senha" required>
+        </div>
+
+        <button type="submit" :disabled="loadingAuth" style="margin-top: 15px; width: 100%;">
+          <span x-show="!loadingAuth">Entrar no Sistema</span>
+          <span x-show="loadingAuth" class="spinner"></span>
+        </button>
+
+        <a href="#" @click.prevent="forcarAtualizacaoManual()" style="display:block; text-align:center; font-size:12px; margin-top:20px; color: var(--text-muted); text-decoration:none; transition: 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">
+          🔄 Forçar Atualização (Limpar Cache)
+        </a>
+      </form>
+    </div>
+
+    <!-- Tela Administrativa (Painel do Professor) -->
+    <div class="tela" :class="{ 'ativa': screen === 'adm' }">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="background: var(--primary-light); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+              <i data-lucide="user" style="width: 18px; height: 18px; color: var(--primary);"></i>
+            </div>
+            <span style="font-weight:600; font-size: 16px;" x-text="'Olá, ' + nomeProfessor"></span>
+          </div>
+          <button @click="logout()" style="width:auto; padding:6px 16px;" class="btn-perigo">
+            <i data-lucide="log-out" style="width:16px; height:16px;"></i> Sair
           </button>
         </div>
 
-        <div x-show="blocoCodigoAtivo">
-          <p style="margin: 5px 0; font-size: 14px; font-weight: 500;">Peça para o aluno acessar o site e digitar o código abaixo:</p>
-          <div class="codigo-token" x-text="codigoTemporario">UPT-XXXX</div>
-          <p style="font-size: 12px; color: var(--primary); margin: 0; font-weight: 500;">
-            <i data-lucide="loader-2" class="spinner" style="width: 12px; height: 12px; vertical-align: middle;"></i> Aguardando preenchimento no celular... (Código válido por 10 minutos)
-          </p>
+        <div style="display:flex; gap:12px; margin-bottom:20px;">
+          <button @click="abrirNovaFicha()" class="btn-sucesso" style="width: auto;">
+            <i data-lucide="plus"></i> Criar Nova Ficha
+          </button>
+          <button @click="carregarFichasGrid()" class="btn-secundario" style="width: auto;" :disabled="loadingFichas">
+            <i data-lucide="refresh-cw" :class="{ 'spinner': loadingFichas }" style="width:16px; height:16px;"></i> Atualizar Lista
+          </button>
+        </div>
+
+        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 15px;">Fichas Cadastradas</h3>
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>CPF</th>
+                <th>Assinatura</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="item in fichas" :key="item.id">
+                <tr>
+                  <td x-text="item.nome" style="font-weight:600;"></td>
+                  <td x-text="item.cpf" style="color: var(--text-muted);"></td>
+                  <td>
+                    <template x-if="item.url_assinatura">
+                      <span class="badge badge-sucesso">
+                        <i data-lucide="check" style="width: 14px; height: 14px;"></i> Assinado
+                      </span>
+                    </template>
+                    <template x-if="!item.url_assinatura">
+                      <span class="badge badge-pendente">
+                        <i data-lucide="clock" style="width: 14px; height: 14px;"></i> Pendente
+                      </span>
+                    </template>
+                  </td>
+                  <td class="acoes-grid">
+                    <button @click="editarFicha(item.id)" class="btn-secundario">
+                      <i data-lucide="edit-3" style="width: 14px; height: 14px;"></i> Editar
+                    </button>
+                  </td>
+                </tr>
+              </template>
+              <template x-if="fichas.length === 0 && !loadingFichas">
+                <tr>
+                  <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                    Nenhuma ficha cadastrada ainda.
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
         </div>
       </div>
+    </div>
 
-      <div style="display:flex; gap:12px; margin-top:25px;">
-        <button @click="salvarFichaCompleta()" class="btn-sucesso">
-          <i data-lucide="save"></i> Salvar Ficha
+    <!-- Tela de Formulário (Cadastro / Edição) -->
+    <div class="tela" :class="{ 'ativa': screen === 'formulario' }">
+      <div class="card">
+        <h3 style="font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 20px;" x-text="fichaId ? 'Editar Ficha de Cadastro' : 'Nova Ficha de Cadastro'"></h3>
+        
+        <div class="form-grupo">
+          <div>
+            <label>Nome Completo:</label>
+            <input type="text" x-model="form.nome" placeholder="Nome do Aluno">
+          </div>
+          <div>
+            <label>CPF:</label>
+            <input type="text" x-model="form.cpf" placeholder="000.000.000-00">
+          </div>
+        </div>
+
+        <div class="form-grupo" style="margin-top: 10px;">
+          <div>
+            <label>E-mail:</label>
+            <input type="email" x-model="form.email" placeholder="exemplo@email.com">
+          </div>
+          <div>
+            <label>Telefone:</label>
+            <input type="text" x-model="form.telefone" placeholder="(75) 99999-9999">
+          </div>
+        </div>
+
+        <div style="margin-top: 10px;">
+          <label>Data de Nascimento:</label>
+          <input type="date" x-model="form.dataNascimento">
+        </div>
+
+        <!-- Coleta de Assinatura -->
+        <div class="box-assinatura">
+          <h4 style="margin: 0 0 10px 0; font-size: 16px; font-weight: 700; color: var(--primary-hover);">Coleta de Assinatura Digital</h4>
+          
+          <div x-show="form.urlAssinatura">
+            <p style="color: #065f46; font-weight: 600; margin: 5px 0; display: inline-flex; align-items: center; gap: 4px;">
+              <i data-lucide="check-circle-2" style="width:16px;height:16px;"></i> Assinatura carregada
+            </p>
+            <div style="background: white; border-radius: 8px; padding: 10px; max-width: 300px; margin: 10px auto; border: 1px solid rgba(0,0,0,0.06);">
+              <img :src="form.urlAssinatura" class="img-preview" alt="Assinatura">
+            </div>
+          </div>
+          
+          <div x-show="!blocoCodigoAtivo">
+            <p style="font-size:13px; color: var(--text-muted); margin: 5px 0 10px 0;">Clique para gerar o código que o aluno usará no celular.</p>
+            <button type="button" @click="gerarCodigoTemporario()" style="width: auto;">
+              <i data-lucide="smartphone"></i> <span x-text="form.urlAssinatura ? 'Recapturar Assinatura' : 'Capturar Assinatura'"></span>
+            </button>
+          </div>
+
+          <div x-show="blocoCodigoAtivo">
+            <p style="margin: 5px 0; font-size: 14px; font-weight: 500;">Peça para o aluno acessar o site e digitar o código abaixo:</p>
+            <div class="codigo-token" x-text="codigoTemporario">UPT-XXXX</div>
+            <p style="font-size: 12px; color: var(--primary); margin: 0; font-weight: 500;">
+              <i data-lucide="loader-2" class="spinner" style="width: 12px; height: 12px; vertical-align: middle;"></i> Aguardando preenchimento no celular... (Código válido por 10 minutos)
+            </p>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:12px; margin-top:25px;">
+          <button @click="salvarFichaCompleta()" class="btn-sucesso">
+            <i data-lucide="save"></i> Salvar Ficha
+          </button>
+          <button x-show="form.urlAssinatura" @click="visualizarDocumento()" class="btn-secundario" style="width: auto;">
+            <i data-lucide="printer"></i> Imprimir Documento
+          </button>
+          <button @click="navegarPara('adm')" class="btn-perigo" style="width: auto;">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tela de Validação do Código (Aluno) -->
+    <div class="tela" :class="{ 'ativa': screen === 'captura-codigo' }">
+      <div class="card" style="max-width:400px; margin:auto; text-align:center;">
+        <div style="background: var(--primary-light); width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
+          <i data-lucide="shield-check" style="width: 28px; height: 28px; color: var(--primary);"></i>
+        </div>
+        <h3 style="font-size: 20px; font-weight: 700; margin-top:0;">Validar Código de Assinatura</h3>
+        <p style="color: var(--text-muted); font-size:14px; margin-bottom: 20px;">Insira o código gerado no computador do coordenador.</p>
+        
+        <input type="text" x-model="alunoCodigo" placeholder="Ex: UPT-1234" style="text-align:center; font-size:22px; text-transform: uppercase; font-weight: 700; letter-spacing: 2px;">
+        
+        <button @click="validarCodigoAluno()" class="btn-sucesso" style="margin-top:15px; width: 100%;">
+          Entrar na Tela de Escrita
         </button>
-        <button x-show="form.urlAssinatura" @click="visualizarDocumento()" class="btn-secundario" style="width: auto;">
-          <i data-lucide="printer"></i> Imprimir Documento
-        </button>
-        <button @click="navegarPara('adm')" class="btn-perigo" style="width: auto;">
-          Cancelar
+        <button @click="navegarPara('login')" class="btn-secundario" style="margin-top: 8px; width: 100%;">
+          Voltar ao Início
         </button>
       </div>
     </div>
-  </div>
 
-  <!-- Tela de Validação do Código (Aluno) -->
-  <div class="tela" :class="{ 'ativa': screen === 'captura-codigo' }">
-    <div class="card" style="max-width:400px; margin:auto; text-align:center;">
-      <div style="background: var(--primary-light); width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
-        <i data-lucide="shield-check" style="width: 28px; height: 28px; color: var(--primary);"></i>
-      </div>
-      <h3 style="font-size: 20px; font-weight: 700; margin-top:0;">Validar Código de Assinatura</h3>
-      <p style="color: var(--text-muted); font-size:14px; margin-bottom: 20px;">Insira o código gerado no computador do coordenador.</p>
-      
-      <input type="text" x-model="alunoCodigo" placeholder="Ex: UPT-1234" style="text-align:center; font-size:22px; text-transform: uppercase; font-weight: 700; letter-spacing: 2px;">
-      
-      <button @click="validarCodigoAluno()" class="btn-sucesso" style="margin-top:15px; width: 100%;">
-        Entrar na Tela de Escrita
-      </button>
-      <button @click="navegarPara('login')" class="btn-secundario" style="margin-top: 8px; width: 100%;">
-        Voltar ao Início
-      </button>
-    </div>
-  </div>
-
-  <!-- Tela do Canvas de Assinatura (Aluno) -->
-  <div class="tela" :class="{ 'ativa': screen === 'canvas-aluno' }">
-    <div class="card" style="max-width: 650px; margin: auto;">
-      <div style="text-align: center; margin-bottom: 15px;">
-        <h3 style="margin-top:0; font-size: 20px; font-weight: 700; margin-bottom: 5px;">Assine na Tela</h3>
-        <p style="font-size: 13px; color: var(--text-muted); margin: 0;">Use o dedo ou caneta touch. Se preferir, vire o celular na horizontal.</p>
-      </div>
-      
-      <canvas id="canvas-assinatura"></canvas>
-      
-      <div class="botoes-canvas">
-        <button @click="limparCanvas()" class="btn-secundario">
-          <i data-lucide="trash-2"></i> Limpar
-        </button>
-        <button @click="enviarAssinaturaSupabase()" class="btn-sucesso" :disabled="loadingSignature" style="flex: 1;">
-          <span x-show="!loadingSignature">Confirmar e Enviar Assinatura</span>
-          <span x-show="loadingSignature" class="spinner"></span>
-        </button>
+    <!-- Tela do Canvas de Assinatura (Aluno) -->
+    <div class="tela" :class="{ 'ativa': screen === 'canvas-aluno' }">
+      <div class="card" style="max-width: 650px; margin: auto;">
+        <div style="text-align: center; margin-bottom: 15px;">
+          <h3 style="margin-top:0; font-size: 20px; font-weight: 700; margin-bottom: 5px;">Assine na Tela</h3>
+          <p style="font-size: 13px; color: var(--text-muted); margin: 0;">Use o dedo ou caneta touch. Se preferir, vire o celular na horizontal.</p>
+        </div>
+        
+        <canvas id="canvas-assinatura"></canvas>
+        
+        <div class="botoes-canvas">
+          <button @click="limparCanvas()" class="btn-secundario">
+            <i data-lucide="trash-2"></i> Limpar
+          </button>
+          <button @click="enviarAssinaturaSupabase()" class="btn-sucesso" :disabled="loadingSignature" style="flex: 1;">
+            <span x-show="!loadingSignature">Confirmar e Enviar Assinatura</span>
+            <span x-show="loadingSignature" class="spinner"></span>
+          </button>
+        </div>
       </div>
     </div>
+
   </div>
 
   <!-- Popup / Toast de Mensagem -->
@@ -589,10 +630,18 @@
     // CONFIGURAÇÕES SUPABASE
     const SUPABASE_URL = "https://seqmmtlesowtcpegzsjf.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_v-dIqaW0onidjVjQ71pFMA_bCgQzRwu";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    let supabase = null;
+    try {
+      if (window.supabase) {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+    } catch (e) {
+      console.error("Erro ao inicializar Supabase:", e);
+    }
 
     // Controle de versão para forçar atualização e limpar cache do navegador
-    const APP_VERSION = "1.0.3"; 
+    const APP_VERSION = "1.0.4"; 
     
     async function verificarVersaoEAtualizar() {
       const versaoSalva = localStorage.getItem("app_version");
@@ -644,6 +693,7 @@
     document.addEventListener('alpine:init', () => {
       Alpine.data('app', () => ({
         screen: 'login',
+        supabaseError: !window.supabase || !supabase,
 
         // Auth
         email: '',
@@ -689,6 +739,13 @@
         },
 
         init() {
+          if (this.supabaseError) {
+            this.$nextTick(() => {
+              if (window.lucide) window.lucide.createIcons();
+            });
+            return;
+          }
+
           this.verificarSessao();
           
           // Watchers para renderizar ícones do Lucide
