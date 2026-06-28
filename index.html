@@ -455,6 +455,9 @@
                     <button @click="editarFicha(item.id)" class="btn-secundario">
                       <i data-lucide="edit-3" style="width: 14px; height: 14px;"></i> Editar
                     </button>
+                    <button @click="imprimirFichaDireto(item)" class="btn-secundario">
+                      <i data-lucide="printer" style="width: 14px; height: 14px;"></i> Imprimir
+                    </button>
                   </td>
                 </tr>
               </template>
@@ -1194,6 +1197,28 @@
 
         visualizarDocumento() {
           window.print();
+        },
+
+        imprimirFichaDireto(item) {
+          // Backup do estado de edição atual para não perder dados que o coordenador estava digitando
+          const backupForm = { ...this.form };
+          const backupId = this.fichaId;
+
+          this.form = {
+            nome: item.nome,
+            cpf: item.cpf,
+            email: item.email || '',
+            telefone: item.telefone || '',
+            dataNascimento: item.data_nascimento || '',
+            urlAssinatura: item.url_assinatura || ''
+          };
+          
+          this.$nextTick(() => {
+            window.print();
+            // Restaura o estado de edição anterior imediatamente
+            this.form = backupForm;
+            this.fichaId = backupId;
+          });
         }
       }));
     });
