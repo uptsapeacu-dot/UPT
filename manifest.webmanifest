@@ -1,13 +1,13 @@
 {
-  "name": "Controle de Presença UPT",
-  "short_name": "Chamada UPT",
-  "description": "Aplicativo de controle de presença da UPT",
+  "name": "TESTES ALPHA",
+  "short_name": "ALPHA UPT",
+  "description": "Sistema de fichas e assinaturas digitais - UPT Sapeaçu",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f0f2f5",
-  "theme_color": "#1a73e8",
+  "background_color": "#f8fafc",
+  "theme_color": "#ea580c",
   "icons": [
     {
       "src": "assets/icon-192.png",
