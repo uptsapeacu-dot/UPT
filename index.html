@@ -610,7 +610,7 @@
     <div class="assinaturas-container">
       <div class="col-assinatura">
         <div class="linha-assinatura">
-          <img x-show="form.urlAssinatura" :src="form.urlAssinatura" alt="Assinatura Aluno" style="max-height: 70px; display:block; margin: 0 auto 5px auto;">
+          <img x-show="form.urlAssinatura" :src="form.urlAssinatura" alt="Assinatura Aluno" style="max-height: 70px; display:block; margin: 0 auto -3px auto;">
         </div>
         Assinatura do Estudante / Responsável
       </div>
@@ -1028,7 +1028,7 @@
               canvas.height = height * dpr;
 
               ctx.scale(dpr, dpr);
-              ctx.strokeStyle = "#000000";
+              ctx.strokeStyle = "#0033aa";
               ctx.lineWidth = 1.4; // Reduzido em 20% para maior precisão de escrita
               ctx.lineCap = "round";
               ctx.lineJoin = "round";
