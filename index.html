@@ -7,9 +7,13 @@
   <title>TESTES ALPHA</title>
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#ea580c">
+  
+  <!-- CDNs Principais: Supabase, Lucide, SignaturePad e AlpineJS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
+  
   <style>
     :root {
       --primary: #ea580c;
@@ -590,7 +594,7 @@
     <div class="modal-box">
       <div class="modal-header">
         <h3 style="margin:0; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-          <i data-lucide="settings" style="width:20px; height:20px; color: var(--primary);\"></i>
+          <i data-lucide="settings" style="width:20px; height:20px; color: var(--primary);"></i>
           Configurações do Diretor
         </h3>
         <button @click="modalDiretor = false" class="btn-secundario" style="width:auto; padding: 6px 10px; margin:0;">
@@ -723,7 +727,7 @@
       ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
       : null;
 
-    const APP_VERSION = "2.1.0";
+    const APP_VERSION = "2.2.0";
 
     async function verificarVersaoEAtualizar() {
       if ('serviceWorker' in navigator) {
@@ -776,8 +780,7 @@
         modoCaptura: 'aluno',
         loadingSignature: false,
         canvasElement: null,
-        canvasContext: null,
-        desenhando: false,
+        signaturePadInstance: null,
         canvasResizeObserver: null,
         modalDiretor: false,
         assinaturaDiretorGlobal: '',
@@ -914,20 +917,7 @@
           try {
             const { data, error } = await sbClient.from('cadastros').select('*').eq('id', id).single();
             if (error) throw error;
-            this.form = {
-              nome: data.nome,
-              cpf: data.cpf,
-              rg: data.rg || '',
-              email: data.email || '',
-              telefone: data.telefone || '',
-              dataNascimento: data.data_nascimento || '',
-              urlAssinatura: data.url_assinatura || '',
-              endereco: data.endereco || '',
-              formacaoAcademica: data.formacao_academica || '',
-              cargo: data.cargo || '',
-              matricula: data.matricula || '',
-              dataAdmissao: data.data_admissao || ''
-            };
+            this.form = { nome: data.nome, cpf: data.cpf, rg: data.rg || '', email: data.email || '', telefone: data.telefone || '', dataNascimento: data.data_nascimento || '', urlAssinatura: data.url_assinatura || '', endereco: data.endereco || '', formacaoAcademica: data.formacao_academica || '', cargo: data.cargo || '', matricula: data.matricula || '', dataAdmissao: data.data_admissao || '' };
             this.codigoTemporario = ''; this.blocoCodigoAtivo = false;
             this.navegarPara('formulario');
           } catch (erro) { this.mostrarPopup('Erro ao buscar dados da ficha: ' + erro.message, 'erro'); }
@@ -937,14 +927,7 @@
           if (!this.form.nome || !this.form.cpf) { this.mostrarPopup('Por favor, preencha o Nome e o CPF antes de colher a assinatura.', 'alerta'); return; }
           const tokenAleatorio = 'UPT-' + Math.floor(1000 + Math.random() * 9000);
           if (!this.fichaId) {
-            const { data, error } = await sbClient.from('cadastros').insert([{
-              nome: this.form.nome, cpf: this.form.cpf, rg: this.form.rg || null, email: this.form.email,
-              telefone: this.form.telefone, data_nascimento: this.form.dataNascimento || null,
-              endereco: this.form.endereco || null, formacao_academica: this.form.formacaoAcademica || null,
-              cargo: this.form.cargo || null, matricula: this.form.matricula || null,
-              data_admissao: this.form.dataAdmissao || null,
-              codigo_temporario: tokenAleatorio, status_assinatura: 'pendente'
-            }]).select().single();
+            const { data, error } = await sbClient.from('cadastros').insert([{ nome: this.form.nome, cpf: this.form.cpf, rg: this.form.rg || null, email: this.form.email, telefone: this.form.telefone, data_nascimento: this.form.dataNascimento || null, endereco: this.form.endereco || null, formacao_academica: this.form.formacaoAcademica || null, cargo: this.form.cargo || null, matricula: this.form.matricula || null, data_admissao: this.form.dataAdmissao || null, codigo_temporario: tokenAleatorio, status_assinatura: 'pendente' }]).select().single();
             if (error) { this.mostrarPopup('Erro ao iniciar captura: ' + error.message, 'erro'); return; }
             this.fichaId = data.id;
           } else {
@@ -973,13 +956,7 @@
         async salvarFichaCompleta() {
           if (!this.form.nome || !this.form.cpf) { this.mostrarPopup('Por favor, preencha o Nome e o CPF.', 'alerta'); return; }
           try {
-            const payload = {
-              nome: this.form.nome, cpf: this.form.cpf, rg: this.form.rg || null, email: this.form.email,
-              telefone: this.form.telefone, data_nascimento: this.form.dataNascimento || null,
-              endereco: this.form.endereco || null, formacao_academica: this.form.formacaoAcademica || null,
-              cargo: this.form.cargo || null, matricula: this.form.matricula || null,
-              data_admissao: this.form.dataAdmissao || null, codigo_temporario: null
-            };
+            const payload = { nome: this.form.nome, cpf: this.form.cpf, rg: this.form.rg || null, email: this.form.email, telefone: this.form.telefone, data_nascimento: this.form.dataNascimento || null, endereco: this.form.endereco || null, formacao_academica: this.form.formacaoAcademica || null, cargo: this.form.cargo || null, matricula: this.form.matricula || null, data_admissao: this.form.dataAdmissao || null, codigo_temporario: null };
             if (this.fichaId) {
               const { error } = await sbClient.from('cadastros').update(payload).eq('id', this.fichaId);
               if (error) throw error;
@@ -1017,37 +994,37 @@
         configurarCanvas() {
           const canvas = document.getElementById('canvas-assinatura');
           if (!canvas) return;
-          const ctx = canvas.getContext('2d');
-          this.canvasElement = canvas; this.canvasContext = ctx;
+          this.canvasElement = canvas;
+
+          // Inicializar a biblioteca Signature Pad
+          this.signaturePadInstance = new SignaturePad(canvas, {
+            minWidth: 1.0,
+            maxWidth: 2.2,
+            penColor: '#0033aa' // Caneta azul
+          });
+
           if (this.canvasResizeObserver) this.canvasResizeObserver.disconnect();
+
+          // Observer para calibrar a resolução física do canvas com base no tamanho visual e DPI
           const resizeObserver = new ResizeObserver(entries => {
             for (let entry of entries) {
               const width = entry.contentRect.width || canvas.clientWidth;
               const height = entry.contentRect.height || canvas.clientHeight;
               const dpr = window.devicePixelRatio || 1;
-              canvas.width = width * dpr; canvas.height = height * dpr;
-              ctx.scale(dpr, dpr);
-              ctx.strokeStyle = '#0033aa'; ctx.lineWidth = 1.4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+              canvas.width = width * dpr;
+              canvas.height = height * dpr;
+              canvas.getContext("2d").scale(dpr, dpr);
+              this.signaturePadInstance.clear(); // Limpa buffers internos do signature_pad
             }
           });
+
           resizeObserver.observe(canvas);
           this.canvasResizeObserver = resizeObserver;
-          canvas.addEventListener('mousedown', (e) => { this.desenhando = true; const p = this.obterPosicaoMouse(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
-          canvas.addEventListener('mousemove', (e) => { if (!this.desenhando) return; const p = this.obterPosicaoMouse(e); ctx.lineTo(p.x, p.y); ctx.stroke(); });
-          canvas.addEventListener('mouseup', () => this.desenhando = false);
-          canvas.addEventListener('mouseout', () => this.desenhando = false);
-          canvas.addEventListener('touchstart', (e) => { e.preventDefault(); this.desenhando = true; const p = this.obterPosicaoTouch(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
-          canvas.addEventListener('touchmove', (e) => { e.preventDefault(); if (!this.desenhando) return; const p = this.obterPosicaoTouch(e); ctx.lineTo(p.x, p.y); ctx.stroke(); });
-          canvas.addEventListener('touchend', () => this.desenhando = false);
         },
 
-        obterPosicaoMouse(e) { const r = this.canvasElement.getBoundingClientRect(); return { x: e.clientX - r.left - 2, y: e.clientY - r.top - 2 }; },
-        obterPosicaoTouch(e) { const r = this.canvasElement.getBoundingClientRect(); const t = e.touches[0]; return { x: t.clientX - r.left - 2, y: t.clientY - r.top - 2 }; },
-
         limparCanvas() {
-          if (this.canvasElement && this.canvasContext) {
-            const canvas = this.canvasElement; const ctx = this.canvasContext;
-            ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.restore();
+          if (this.signaturePadInstance) {
+            this.signaturePadInstance.clear();
           }
         },
 
@@ -1142,20 +1119,7 @@
         },
 
         imprimirFichaDireto(item) {
-          this.printData = {
-            nome: item.nome,
-            cpf: item.cpf,
-            rg: item.rg || '',
-            email: item.email || '',
-            telefone: item.telefone || '',
-            dataNascimento: item.data_nascimento || '',
-            urlAssinatura: item.url_assinatura || '',
-            endereco: item.endereco || '',
-            formacaoAcademica: item.formacao_academica || '',
-            cargo: item.cargo || '',
-            matricula: item.matricula || '',
-            dataAdmissao: item.data_admissao || ''
-          };
+          this.printData = { nome: item.nome, cpf: item.cpf, rg: item.rg || '', email: item.email || '', telefone: item.telefone || '', dataNascimento: item.data_nascimento || '', urlAssinatura: item.url_assinatura || '', endereco: item.endereco || '', formacaoAcademica: item.formacao_academica || '', cargo: item.cargo || '', matricula: item.matricula || '', dataAdmissao: item.data_admissao || '' };
           this.$nextTick(() => { window.print(); });
         }
 
