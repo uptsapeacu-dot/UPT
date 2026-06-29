@@ -1,0 +1,225 @@
+@import "tailwindcss";
+
+:root {
+  --primary: #ea580c;
+  --primary-hover: #c2410c;
+  --primary-light: #fff7ed;
+  --bg: #f8fafc;
+  --card-bg: #ffffff;
+  --text: #1e293b;
+  --text-muted: #64748b;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-focus: #f97316;
+}
+
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-light: var(--primary-light);
+  --color-bg: var(--bg);
+  --color-card-bg: var(--card-bg);
+  --color-text-dark: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-border-custom: var(--border);
+  --color-border-focus: var(--border-focus);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  max-width: 800px;
+  margin: auto;
+  padding: 15px;
+}
+
+/* Custom inputs, buttons, and animations matching legacy CSS */
+input, select {
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+input:focus, select:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-custom {
+  animation: spin 0.8s linear infinite;
+}
+
+/* Impressão */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  #area-impressao {
+    display: block !important;
+  }
+}
+
+#area-impressao {
+  display: none;
+  background: white;
+  font-family: Arial, sans-serif;
+  font-size: 11pt;
+  color: #000;
+  padding: 0;
+}
+
+.ficha-wrap {
+  max-width: 720px;
+  margin: auto;
+  padding: 20px;
+}
+
+.ficha-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  padding-bottom: 10px;
+  border-bottom: 3px solid #003399;
+}
+
+.ficha-header img.logo-prefeitura {
+  height: 60px;
+  object-fit: contain;
+}
+
+.ficha-header img.logo-secretaria {
+  height: 40px;
+  object-fit: contain;
+}
+
+.ficha-header-title {
+  text-align: center;
+  flex: 1;
+  padding: 0 15px;
+}
+
+.ficha-header-title h1 {
+  font-size: 15pt;
+  font-weight: bold;
+  color: #003399;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.ficha-header-title p {
+  font-size: 9pt;
+  color: #555;
+  margin: 3px 0 0 0;
+}
+
+.ficha-secao-titulo {
+  background: #003399;
+  color: white;
+  font-weight: bold;
+  font-size: 10pt;
+  padding: 5px 10px;
+  letter-spacing: 0.5px;
+  margin-top: 10px;
+}
+
+.ficha-grid {
+  border: 1px solid #ccc;
+  border-top: none;
+}
+
+.ficha-row {
+  display: flex;
+  border-bottom: 1px solid #ccc;
+}
+
+.ficha-row:last-child {
+  border-bottom: none;
+}
+
+.ficha-cell {
+  flex: 1;
+  padding: 5px 8px;
+  border-right: 1px solid #ccc;
+  min-height: 32px;
+}
+
+.ficha-cell:last-child {
+  border-right: none;
+}
+
+.ficha-label {
+  font-size: 7.5pt;
+  color: #555;
+  font-weight: bold;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.ficha-valor {
+  font-size: 10pt;
+  color: #111;
+  display: block;
+  min-height: 14px;
+}
+
+.ficha-declaracao {
+  font-size: 9pt;
+  color: #333;
+  margin: 14px 0 8px 0;
+  text-align: justify;
+  font-style: italic;
+}
+
+.ficha-assinaturas {
+  display: flex;
+  gap: 40px;
+  margin-top: 10px;
+}
+
+.ficha-ass-col {
+  flex: 1;
+  text-align: center;
+}
+
+.ficha-ass-linha {
+  min-height: 65px;
+  border-bottom: 1.5px solid #000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 0;
+}
+
+.ficha-ass-linha img {
+  max-height: 60px;
+  max-width: 90%;
+  display: block;
+  margin: 0 auto;
+}
+
+.ficha-ass-label {
+  font-size: 8.5pt;
+  color: #444;
+  margin-top: 4px;
+}
