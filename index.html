@@ -528,7 +528,7 @@
           </div>
           <div x-show="blocoCodigoAtivo">
             <p style="margin: 5px 0; font-size: 14px; font-weight: 500;">Peça para o aluno acessar o site e digitar o código abaixo:</p>
-            <div class="codigo-token" x-text="codigoTemporario">UPT-XXXX</div>
+            <div class="codigo-token" x-text="codigoTemporario">XXXX</div>
             <p style="font-size: 12px; color: var(--primary); margin: 0; font-weight: 500;">
               <i data-lucide="loader-2" class="spinner" style="width: 12px; height: 12px; vertical-align: middle;"></i> Aguardando preenchimento no celular... (Código válido por 10 minutos)
             </p>
@@ -557,7 +557,7 @@
         </div>
         <h3 style="font-size: 20px; font-weight: 700; margin-top:0;">Validar Código de Assinatura</h3>
         <p style="color: var(--text-muted); font-size:14px; margin-bottom: 20px;">Insira o código gerado no sistema do diretor.</p>
-        <input type="text" x-model="alunoCodigo" placeholder="Ex: UPT-1234" style="text-align:center; font-size:22px; text-transform: uppercase; font-weight: 700; letter-spacing: 2px;">
+        <input type="text" x-model="alunoCodigo" placeholder="Ex: 1234" style="text-align:center; font-size:22px; text-transform: uppercase; font-weight: 700; letter-spacing: 2px;">
         <button @click="validarCodigoAluno()" class="btn-sucesso" style="margin-top:15px; width: 100%;">
           Entrar na Tela de Escrita
         </button>
@@ -618,7 +618,7 @@
       </div>
       <div x-show="blocoCodigoDiretorAtivo">
         <p style="font-size: 14px; font-weight: 500; margin: 0 0 8px 0;">Acesse o site no celular e digite o código:</p>
-        <div class="codigo-token" x-text="codigoTempDiretor">DIR-XXXX</div>
+        <div class="codigo-token" x-text="codigoTempDiretor">XXXX</div>
         <p style="font-size: 12px; color: var(--primary); margin: 0;">
           <i data-lucide="loader-2" class="spinner" style="width:12px;height:12px;vertical-align:middle;"></i>
           Aguardando assinatura no celular... (10 min)
@@ -870,7 +870,7 @@
           try {
             const { data } = await sbClient.from('configuracoes_sistema').select('assinatura_diretor, nome_diretor').eq('id', 'singleton').single();
             if (data) {
-              this.assinaturaDiretorGlobal = data.assinatura_diretor || '';
+              this.assinaturaDiretorGlobal = data.assinatura_diretor ? `${data.assinatura_diretor}?t=${Date.now()}` : '';
               if (data.nome_diretor) this.nomeDiretor = data.nome_diretor;
             }
           } catch (e) { console.warn('Config diretor:', e); }
@@ -879,7 +879,7 @@
         abrirModalDiretor() { this.modalDiretor = true; },
 
         async gerarCodigoDiretor() {
-          const codigo = 'DIR-' + Math.floor(1000 + Math.random() * 9000);
+          const codigo = String(Math.floor(1000 + Math.random() * 9000));
           const expira = new Date(Date.now() + 10 * 60 * 1000).toISOString();
           const { error } = await sbClient.from('configuracoes_sistema').update({ codigo_temp_diretor: codigo, codigo_expira_em: expira }).eq('id', 'singleton');
           if (error) { this.mostrarPopup('Erro ao gerar código: ' + error.message, 'erro'); return; }
@@ -889,7 +889,7 @@
             const { data } = await sbClient.from('configuracoes_sistema').select('assinatura_diretor, codigo_temp_diretor').eq('id', 'singleton').single();
             if (data && data.assinatura_diretor && !data.codigo_temp_diretor) {
               clearInterval(this.pollingDiretorInterval);
-              this.assinaturaDiretorGlobal = data.assinatura_diretor;
+              this.assinaturaDiretorGlobal = `${data.assinatura_diretor}?t=${Date.now()}`;
               this.blocoCodigoDiretorAtivo = false; this.codigoTempDiretor = '';
               this.modalDiretor = false;
               this.mostrarPopup('Assinatura do Diretor capturada com sucesso!', 'sucesso');
@@ -917,7 +917,7 @@
           try {
             const { data, error } = await sbClient.from('cadastros').select('*').eq('id', id).single();
             if (error) throw error;
-            this.form = { nome: data.nome, cpf: data.cpf, rg: data.rg || '', email: data.email || '', telefone: data.telefone || '', dataNascimento: data.data_nascimento || '', urlAssinatura: data.url_assinatura || '', endereco: data.endereco || '', formacaoAcademica: data.formacao_academica || '', cargo: data.cargo || '', matricula: data.matricula || '', dataAdmissao: data.data_admissao || '' };
+            this.form = { nome: data.nome, cpf: data.cpf, rg: data.rg || '', email: data.email || '', telefone: data.telefone || '', dataNascimento: data.data_nascimento || '', urlAssinatura: data.url_assinatura ? `${data.url_assinatura}?t=${Date.now()}` : '', endereco: data.endereco || '', formacaoAcademica: data.formacao_academica || '', cargo: data.cargo || '', matricula: data.matricula || '', dataAdmissao: data.data_admissao || '' };
             this.codigoTemporario = ''; this.blocoCodigoAtivo = false;
             this.navegarPara('formulario');
           } catch (erro) { this.mostrarPopup('Erro ao buscar dados da ficha: ' + erro.message, 'erro'); }
@@ -925,7 +925,7 @@
 
         async gerarCodigoTemporario() {
           if (!this.form.nome || !this.form.cpf) { this.mostrarPopup('Por favor, preencha o Nome e o CPF antes de colher a assinatura.', 'alerta'); return; }
-          const tokenAleatorio = 'UPT-' + Math.floor(1000 + Math.random() * 9000);
+          const tokenAleatorio = String(Math.floor(1000 + Math.random() * 9000));
           if (!this.fichaId) {
             const { data, error } = await sbClient.from('cadastros').insert([{ nome: this.form.nome, cpf: this.form.cpf, rg: this.form.rg || null, email: this.form.email, telefone: this.form.telefone, data_nascimento: this.form.dataNascimento || null, endereco: this.form.endereco || null, formacao_academica: this.form.formacaoAcademica || null, cargo: this.form.cargo || null, matricula: this.form.matricula || null, data_admissao: this.form.dataAdmissao || null, codigo_temporario: tokenAleatorio, status_assinatura: 'pendente' }]).select().single();
             if (error) { this.mostrarPopup('Erro ao iniciar captura: ' + error.message, 'erro'); return; }
@@ -938,7 +938,7 @@
           this.pollingInterval = setInterval(async () => {
             const { data } = await sbClient.from('cadastros').select('url_assinatura, status_assinatura').eq('id', this.fichaId).single();
             if (data && data.url_assinatura && data.status_assinatura === 'assinado') {
-              clearInterval(this.pollingInterval); this.form.urlAssinatura = data.url_assinatura;
+              clearInterval(this.pollingInterval); this.form.urlAssinatura = `${data.url_assinatura}?t=${Date.now()}`;
               this.blocoCodigoAtivo = false; this.codigoTemporario = '';
               this.mostrarPopup('Assinatura capturada com sucesso!', 'sucesso');
             }
@@ -973,22 +973,32 @@
         async validarCodigoAluno() {
           const codigo = this.alunoCodigo.trim().toUpperCase();
           if (!codigo) { this.mostrarPopup('Por favor, insira o código.', 'alerta'); return; }
-          if (codigo.startsWith('DIR-')) {
-            try {
-              const { data, error } = await sbClient.from('configuracoes_sistema').select('id, codigo_expira_em').eq('codigo_temp_diretor', codigo).single();
-              if (error || !data) { this.mostrarPopup('Código inválido ou expirado.', 'erro'); return; }
-              if (data.codigo_expira_em && new Date(data.codigo_expira_em) < new Date()) { this.mostrarPopup('Este código já expirou.', 'erro'); return; }
+          try {
+            const { data: configData, error: configError } = await sbClient.from('configuracoes_sistema').select('id, codigo_expira_em').eq('codigo_temp_diretor', codigo);
+            if (configData && configData.length > 0) {
+              const config = configData[0];
+              if (config.codigo_expira_em && new Date(config.codigo_expira_em) < new Date()) {
+                this.mostrarPopup('Este código já expirou.', 'erro');
+                return;
+              }
               this.modoCaptura = 'diretor'; this.alunoFichaId = 'diretor-singleton';
               this.navegarPara('canvas-aluno');
-            } catch (e) { this.mostrarPopup('Erro ao validar código do diretor.', 'erro'); }
-            return;
+              return;
+            }
+          } catch (e) {
+            console.warn('Erro ao verificar código do diretor:', e);
           }
           try {
-            const { data, error } = await sbClient.from('cadastros').select('id, nome').eq('codigo_temporario', codigo).single();
-            if (error || !data) { this.mostrarPopup('Código inválido ou expirado.', 'erro'); return; }
-            this.modoCaptura = 'aluno'; this.alunoFichaId = data.id;
+            const { data, error } = await sbClient.from('cadastros').select('id, nome').eq('codigo_temporario', codigo);
+            if (error || !data || data.length === 0) {
+              this.mostrarPopup('Código inválido ou expirado.', 'erro');
+              return;
+            }
+            this.modoCaptura = 'aluno'; this.alunoFichaId = data[0].id;
             this.navegarPara('canvas-aluno');
-          } catch (erro) { this.mostrarPopup('Erro ao validar código.', 'erro'); }
+          } catch (erro) {
+            this.mostrarPopup('Código inválido ou expirado.', 'erro');
+          }
         },
 
         configurarCanvas() {
@@ -1097,7 +1107,7 @@
                 atualizado_em: new Date().toISOString()
               }).eq('id', 'singleton');
               if (error) throw error;
-              this.assinaturaDiretorGlobal = publicUrl;
+              this.assinaturaDiretorGlobal = `${publicUrl}?t=${Date.now()}`;
               this.mostrarPopup('Assinatura do Diretor enviada com sucesso!', 'sucesso');
             } else {
               if (!this.alunoFichaId) { this.mostrarPopup('Erro: Registro do aluno não identificado.', 'erro'); return; }
@@ -1113,14 +1123,48 @@
           finally { this.loadingSignature = false; }
         },
 
+        async aguardarImagensEImprimir(urlAss, urlDir) {
+          const promises = [];
+          if (urlAss) {
+            promises.push(new Promise((resolve) => {
+              const img = new Image();
+              img.onload = () => resolve();
+              img.onerror = () => resolve();
+              img.src = urlAss;
+            }));
+          }
+          if (urlDir) {
+            promises.push(new Promise((resolve) => {
+              const img = new Image();
+              img.onload = () => resolve();
+              img.onerror = () => resolve();
+              img.src = urlDir;
+            }));
+          }
+          if (promises.length > 0) {
+            await Promise.all(promises);
+          }
+          setTimeout(() => {
+            window.print();
+          }, 150);
+        },
+
         visualizarDocumento() {
           this.printData = { ...this.form };
-          this.$nextTick(() => { window.print(); });
+          const urlAss = this.printData.urlAssinatura;
+          const urlDir = this.assinaturaDiretorGlobal;
+          this.$nextTick(async () => {
+            await this.aguardarImagensEImprimir(urlAss, urlDir);
+          });
         },
 
         imprimirFichaDireto(item) {
-          this.printData = { nome: item.nome, cpf: item.cpf, rg: item.rg || '', email: item.email || '', telefone: item.telefone || '', dataNascimento: item.data_nascimento || '', urlAssinatura: item.url_assinatura || '', endereco: item.endereco || '', formacaoAcademica: item.formacao_academica || '', cargo: item.cargo || '', matricula: item.matricula || '', dataAdmissao: item.data_admissao || '' };
-          this.$nextTick(() => { window.print(); });
+          const urlAss = item.url_assinatura ? `${item.url_assinatura}?t=${Date.now()}` : '';
+          const urlDir = this.assinaturaDiretorGlobal ? (this.assinaturaDiretorGlobal.includes('?t=') ? this.assinaturaDiretorGlobal : `${this.assinaturaDiretorGlobal}?t=${Date.now()}`) : '';
+          this.printData = { nome: item.nome, cpf: item.cpf, rg: item.rg || '', email: item.email || '', telefone: item.telefone || '', dataNascimento: item.data_nascimento || '', urlAssinatura: urlAss, endereco: item.endereco || '', formacaoAcademica: item.formacao_academica || '', cargo: item.cargo || '', matricula: item.matricula || '', dataAdmissao: item.data_admissao || '' };
+          this.$nextTick(async () => {
+            await this.aguardarImagensEImprimir(urlAss, urlDir);
+          });
         }
 
       }));
