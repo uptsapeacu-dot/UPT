@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Outfit } from "next/font/google";
 import "./globals.css";
+import PWARegister from "@/components/PWARegister";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -15,6 +16,15 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "TESTES ALPHA",
   description: "Ficha de Matrícula - Secretaria Municipal de Educação",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Matrícula UPT",
+  },
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/icon-192.png",
+  },
 };
 
 export default function RootLayout({
@@ -24,7 +34,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className={`${outfit.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <PWARegister />
+        {children}
+      </body>
     </html>
   );
 }
+
